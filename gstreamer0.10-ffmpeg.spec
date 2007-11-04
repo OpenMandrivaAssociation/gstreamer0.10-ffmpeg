@@ -2,7 +2,7 @@
 %define name %bname-ffmpeg
 %define oname gst-ffmpeg
 %define version 0.10.2
-%define release %mkrel 1
+%define release %mkrel 2
 %define gstver %version
 
 Summary: Gstreamer plugin for the ffmpeg codec
@@ -10,9 +10,9 @@ Name: %{name}
 Version: %{version}
 Release: %{release}
 Source0: http://gstreamer.freedesktop.org/src/gst-ffmpeg/%{oname}-%{version}.tar.bz2
-License: GPL
+License: GPLv2+
 Group: Video
-Url: http://www.gstreamer.net
+URL: http://www.gstreamer.net
 BuildRequires: libgstreamer-plugins-base-devel >= %gstver
 BuildRequires: liboil-devel
 BuildRequires: libcheck-devel valgrind
@@ -46,5 +46,4 @@ rm -rf $RPM_BUILD_ROOT
 %doc README NEWS TODO ChangeLog AUTHORS docs/plugins/html/
 %_libdir/gstreamer-*/libgstffmpeg.so
 %_libdir/gstreamer-*/libgstpostproc.so
-
 
