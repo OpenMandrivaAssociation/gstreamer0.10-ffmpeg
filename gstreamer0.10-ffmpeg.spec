@@ -1,8 +1,8 @@
 %define bname gstreamer0.10
 %define name %bname-ffmpeg
 %define oname gst-ffmpeg
-%define version 0.10.2
-%define release %mkrel 2
+%define version 0.10.3
+%define release %mkrel 1
 %define gstver %version
 
 Summary: Gstreamer plugin for the ffmpeg codec
