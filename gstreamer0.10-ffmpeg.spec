@@ -15,6 +15,7 @@ Group: Video
 URL: http://www.gstreamer.net
 BuildRequires: libgstreamer-plugins-base-devel >= %gstver
 BuildRequires: liboil-devel
+BuildRequires: freetype2-devel
 BuildRequires: libcheck-devel valgrind
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
 
