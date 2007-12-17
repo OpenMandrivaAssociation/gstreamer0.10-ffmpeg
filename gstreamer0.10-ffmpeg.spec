@@ -17,7 +17,6 @@ BuildRequires: libgstreamer-plugins-base-devel >= %gstver
 BuildRequires: liboil-devel
 BuildRequires: freetype2-devel
 BuildRequires: libcheck-devel valgrind
-BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
 
 %description
 Video codec plugin for GStreamer based on the ffmpeg libraries.
