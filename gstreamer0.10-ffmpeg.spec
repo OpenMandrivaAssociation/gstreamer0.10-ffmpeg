@@ -5,6 +5,16 @@
 %define release %mkrel 3
 %define gstver %version
 
+# _with = default off, _without = default on
+%bcond_with external_ffmpeg
+
+# (Anssi 01/2008) External ffmpeg disabled because of issues:
+# with FLV file with totem:
+# ** ERROR:(gstffmpegdec.c:731):gst_ffmpegdec_get_buffer: code should not be reached
+# with VDR stream as per manual pipeline in http://bugzilla.gnome.org/show_bug.cgi?id=506902 :
+# (gst-launch-0.10:23590): GStreamer-CRITICAL **: gst_value_set_fraction: assertion `denominator != 0' failed
+# No playback in either case.
+
 Summary: Gstreamer plugin for the ffmpeg codec
 Name: %{name}
 Version: %{version}
@@ -18,6 +28,8 @@ Source0: http://gstreamer.freedesktop.org/src/gst-ffmpeg/%{oname}-%{version}.tar
 # "native" non-ffmpeg MPL-licensed fluendo-mpegdemux, which is apparently
 # highly preferred to ffmpeg plugin by upstream.
 Patch0: gst-ffmpeg-enable-mpegts.patch
+# (Anssi 01/2008) Fixes for use with recent ffmpeg (from warnings+errors):
+Patch1: gst-ffmpeg-0.10.3-recent-ffmpeg.patch
 License: GPLv2+
 Group: Video
 URL: http://www.gstreamer.net
@@ -25,6 +37,9 @@ BuildRequires: libgstreamer-plugins-base-devel >= %gstver
 BuildRequires: liboil-devel
 BuildRequires: freetype2-devel
 BuildRequires: libcheck-devel valgrind
+%if %with external_ffmpeg
+BuildRequires: ffmpeg-devel
+%endif
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
 
 %description
@@ -33,9 +48,16 @@ Video codec plugin for GStreamer based on the ffmpeg libraries.
 %prep
 %setup -q -n %oname-%version
 %patch0 -p1
+%if %with external_ffmpeg
+%patch1 -p1
+%endif
 
 %build
-%configure2_5x
+%configure2_5x \
+%if %with external_ffmpeg
+	--with-system-ffmpeg
+%endif
+
 %make
 
 %check
