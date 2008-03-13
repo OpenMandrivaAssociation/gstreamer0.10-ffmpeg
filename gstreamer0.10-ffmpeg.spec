@@ -2,7 +2,7 @@
 %define name %bname-ffmpeg
 %define oname gst-ffmpeg
 %define version 0.10.3
-%define release %mkrel 3
+%define release %mkrel 4
 %define gstver %version
 
 # _with = default off, _without = default on
@@ -54,6 +54,8 @@ Video codec plugin for GStreamer based on the ffmpeg libraries.
 
 %build
 %configure2_5x \
+  --with-package-name='Mandriva %name package' \
+  --with-package-origin='http://www.mandriva.com/' \
 %if %with external_ffmpeg
 	--with-system-ffmpeg
 %endif
