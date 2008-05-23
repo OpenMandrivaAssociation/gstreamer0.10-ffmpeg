@@ -1,8 +1,8 @@
 %define bname gstreamer0.10
 %define name %bname-ffmpeg
 %define oname gst-ffmpeg
-%define version 0.10.3
-%define release %mkrel 4
+%define version 0.10.4
+%define release %mkrel 1
 %define gstver %version
 
 # _with = default off, _without = default on
@@ -28,8 +28,6 @@ Source0: http://gstreamer.freedesktop.org/src/gst-ffmpeg/%{oname}-%{version}.tar
 # "native" non-ffmpeg MPL-licensed fluendo-mpegdemux, which is apparently
 # highly preferred to ffmpeg plugin by upstream.
 Patch0: gst-ffmpeg-enable-mpegts.patch
-# (Anssi 01/2008) Fixes for use with recent ffmpeg (from warnings+errors):
-Patch1: gst-ffmpeg-0.10.3-recent-ffmpeg.patch
 License: GPLv2+
 Group: Video
 URL: http://www.gstreamer.net
@@ -47,10 +45,7 @@ Video codec plugin for GStreamer based on the ffmpeg libraries.
 
 %prep
 %setup -q -n %oname-%version
-%patch0 -p1
-%if %with external_ffmpeg
-%patch1 -p1
-%endif
+%patch0 -p1 -b .mpegts
 
 %build
 %configure2_5x \
