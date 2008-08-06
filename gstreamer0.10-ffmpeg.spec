@@ -2,7 +2,7 @@
 %define name %bname-ffmpeg
 %define oname gst-ffmpeg
 %define version 0.10.4
-%define release %mkrel 1
+%define release %mkrel 2
 %define gstver %version
 
 # _with = default off, _without = default on
