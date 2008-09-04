@@ -1,8 +1,8 @@
 %define bname gstreamer0.10
 %define name %bname-ffmpeg
 %define oname gst-ffmpeg
-%define version 0.10.4
-%define release %mkrel 2
+%define version 0.10.5
+%define release %mkrel 1
 %define gstver %version
 
 # _with = default off, _without = default on
@@ -72,7 +72,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root)
-%doc README NEWS TODO ChangeLog AUTHORS docs/plugins/html/
+%doc README NEWS TODO ChangeLog AUTHORS 
 %_libdir/gstreamer-*/libgstffmpeg.so
 %_libdir/gstreamer-*/libgstpostproc.so
 
