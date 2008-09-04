@@ -35,6 +35,7 @@ BuildRequires: libgstreamer-plugins-base-devel >= %gstver
 BuildRequires: liboil-devel
 BuildRequires: freetype2-devel
 BuildRequires: libcheck-devel valgrind
+BuildRequires: libbzip2-devel
 %if %with external_ffmpeg
 BuildRequires: ffmpeg-devel
 %endif
