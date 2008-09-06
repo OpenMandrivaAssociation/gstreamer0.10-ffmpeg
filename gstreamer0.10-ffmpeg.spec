@@ -2,13 +2,13 @@
 %define name %bname-ffmpeg
 %define oname gst-ffmpeg
 %define version 0.10.5
-%define release %mkrel 1
+%define release %mkrel 2
 %define gstver %version
 
 # _with = default off, _without = default on
 %bcond_with external_ffmpeg
 
-# (Anssi 01/2008) External ffmpeg disabled because of issues:
+# (Anss	    i 01/2008) External ffmpeg disabled because of issues:
 # with FLV file with totem:
 # ** ERROR:(gstffmpegdec.c:731):gst_ffmpegdec_get_buffer: code should not be reached
 # with VDR stream as per manual pipeline in http://bugzilla.gnome.org/show_bug.cgi?id=506902 :
