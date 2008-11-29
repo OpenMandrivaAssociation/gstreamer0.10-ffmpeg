@@ -1,14 +1,14 @@
 %define bname gstreamer0.10
 %define name %bname-ffmpeg
 %define oname gst-ffmpeg
-%define version 0.10.5
-%define release %mkrel 2
+%define version 0.10.6
+%define release %mkrel 1
 %define gstver %version
 
 # _with = default off, _without = default on
 %bcond_with external_ffmpeg
 
-# (Anss	    i 01/2008) External ffmpeg disabled because of issues:
+# (Anssi 01/2008) External ffmpeg disabled because of issues:
 # with FLV file with totem:
 # ** ERROR:(gstffmpegdec.c:731):gst_ffmpegdec_get_buffer: code should not be reached
 # with VDR stream as per manual pipeline in http://bugzilla.gnome.org/show_bug.cgi?id=506902 :
@@ -74,6 +74,7 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-,root,root)
 %doc README NEWS TODO ChangeLog AUTHORS 
-%_libdir/gstreamer-*/libgstffmpeg.so
-%_libdir/gstreamer-*/libgstpostproc.so
+%_libdir/gstreamer-0.10/libgstffmpeg.so
+%_libdir/gstreamer-0.10/libgstffmpegscale.so
+%_libdir/gstreamer-0.10/libgstpostproc.so
 
