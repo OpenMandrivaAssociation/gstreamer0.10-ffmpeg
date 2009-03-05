@@ -2,7 +2,7 @@
 %define name %bname-ffmpeg
 %define oname gst-ffmpeg
 %define version 0.10.6
-%define release %mkrel 1
+%define release %mkrel 2
 %define gstver %version
 
 # _with = default off, _without = default on
@@ -28,6 +28,11 @@ Source0: http://gstreamer.freedesktop.org/src/gst-ffmpeg/%{oname}-%{version}.tar
 # "native" non-ffmpeg MPL-licensed fluendo-mpegdemux, which is apparently
 # highly preferred to ffmpeg plugin by upstream.
 Patch0: gst-ffmpeg-enable-mpegts.patch
+# gw gstffmpegdec: Set the rank of the AAC decoder to NONE. 
+# Fixes http://bugzilla.gnome.org/show_bug.cgi?id=566250
+# https://qa.mandriva.com/show_bug.cgi?id=48032
+Patch1: gst-ffmpeg-eeffd7b87feaa1e6076b6110419fd0455bf64b6f.patch
+Patch2: gst-ffmpeg-0.10.6-fix-format-string.patch
 License: GPLv2+
 Group: Video
 URL: http://www.gstreamer.net
@@ -47,6 +52,8 @@ Video codec plugin for GStreamer based on the ffmpeg libraries.
 %prep
 %setup -q -n %oname-%version
 %patch0 -p1 -b .mpegts
+%patch1 -p1
+%patch2 -p1
 
 %build
 %configure2_5x \
