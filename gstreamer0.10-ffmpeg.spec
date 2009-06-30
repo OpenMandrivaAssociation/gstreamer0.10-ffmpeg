@@ -1,7 +1,7 @@
 %define bname gstreamer0.10
 %define name %bname-ffmpeg
 %define oname gst-ffmpeg
-%define version 0.10.7
+%define version 0.10.8
 %define release %mkrel 1
 %define gstver %version
 
@@ -49,6 +49,7 @@ Video codec plugin for GStreamer based on the ffmpeg libraries.
 %patch0 -p1 -b .mpegts
 
 %build
+%define _disable_ld_no_undefined 1
 %configure2_5x \
   --with-package-name='Mandriva %name package' \
   --with-package-origin='http://www.mandriva.com/' \
