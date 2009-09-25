@@ -2,7 +2,7 @@
 %define name %bname-ffmpeg
 %define oname gst-ffmpeg
 %define version 0.10.8
-%define release %mkrel 1
+%define release %mkrel 2
 %define gstver %version
 
 # _with = default off, _without = default on
@@ -34,7 +34,10 @@ URL: http://www.gstreamer.net
 BuildRequires: libgstreamer-plugins-base-devel >= %gstver
 BuildRequires: liboil-devel
 BuildRequires: freetype2-devel
-BuildRequires: libcheck-devel valgrind
+BuildRequires: libcheck-devel
+%ifnarch %arm %mips
+BuildRequires: valgrind
+%endif
 BuildRequires: libbzip2-devel
 %if %with external_ffmpeg
 BuildRequires: ffmpeg-devel
