@@ -53,11 +53,11 @@ Video codec plugin for GStreamer based on the ffmpeg libraries.
 
 %build
 %define _disable_ld_no_undefined 1
+# gst-ffmpeg mp3 decoder has issues (eg no seeking support), disable it since
+# gst-plugins-bad and gst-fluendo both ship better mp3 decoders
 %configure2_5x \
   --with-package-name='Mandriva %name package' \
   --with-package-origin='http://www.mandriva.com/' \
-# gst-ffmpeg mp3 decoder has issues (eg no seeking support), disable it since
-# gst-plugins-bad and gst-fluendo both ship better mp3 decoders
   --with-ffmpeg-extra-configure='--disable-decoder=mp3 --disable-decoder=mp3on4 --disable-decoder=mp3adu --disable-demuxer=mp3' \
 %if %with external_ffmpeg
 	--with-system-ffmpeg
