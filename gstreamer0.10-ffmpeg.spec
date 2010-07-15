@@ -1,9 +1,9 @@
 %define bname gstreamer0.10
 %define name %bname-ffmpeg
 %define oname gst-ffmpeg
-%define version 0.10.10
-%define release %mkrel 2
-%define gstver %version
+%define version 0.10.11
+%define release %mkrel 1
+%define gstver 0.10.22
 
 # _with = default off, _without = default on
 %bcond_with external_ffmpeg
@@ -32,7 +32,7 @@ License: GPLv2+
 Group: Video
 URL: http://www.gstreamer.net
 BuildRequires: libgstreamer-plugins-base-devel >= %gstver
-BuildRequires: liboil-devel
+BuildRequires: liborc-devel >= 0.4.5
 BuildRequires: freetype2-devel
 BuildRequires: libcheck-devel
 %ifnarch %arm %mips
