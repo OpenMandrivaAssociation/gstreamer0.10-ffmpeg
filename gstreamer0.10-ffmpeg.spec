@@ -1,8 +1,8 @@
 %define bname gstreamer0.10
 %define name %bname-ffmpeg
 %define oname gst-ffmpeg
-%define version 0.10.11
-%define release %mkrel 3
+%define version 0.10.12
+%define release %mkrel 1
 %define gstver 0.10.22
 
 # _with = default off, _without = default on
@@ -28,6 +28,7 @@ Source0: http://gstreamer.freedesktop.org/src/gst-ffmpeg/%{oname}-%{version}.tar
 # "native" non-ffmpeg MPL-licensed fluendo-mpegdemux, which is apparently
 # highly preferred to ffmpeg plugin by upstream.
 Patch0: gst-ffmpeg-enable-mpegts.patch
+Patch1: gst-ffmpeg-fix-format-strings.patch
 License: GPLv2+
 Group: Video
 URL: http://www.gstreamer.net
@@ -35,6 +36,7 @@ BuildRequires: libgstreamer-plugins-base-devel >= %gstver
 BuildRequires: liborc-devel >= 0.4.5
 BuildRequires: freetype2-devel
 BuildRequires: libcheck-devel
+BuildRequires: yasm
 %ifnarch %arm %mips
 BuildRequires: valgrind
 %endif
