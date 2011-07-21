@@ -51,7 +51,7 @@ Video codec plugin for GStreamer based on the ffmpeg libraries.
 
 %prep
 %setup -q -n %oname-%version
-%patch0 -p1 -b .mpegts
+%apply_patches
 
 %build
 %define _disable_ld_no_undefined 1
