@@ -1,7 +1,7 @@
 %define bname gstreamer0.10
 %define name %bname-ffmpeg
 %define oname gst-ffmpeg
-%define version 0.10.12
+%define version 0.10.13
 %define release %mkrel 1
 %define gstver 0.10.22
 
