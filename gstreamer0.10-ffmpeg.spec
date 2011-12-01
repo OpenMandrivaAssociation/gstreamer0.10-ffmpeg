@@ -73,12 +73,12 @@ cd tests/check
 #make check
 
 %install
-rm -rf $RPM_BUILD_ROOT
+rm -rf %{buildroot}
 %makeinstall_std
 rm -f %buildroot%_libdir/gstreamer*/*a
 
 %clean
-rm -rf $RPM_BUILD_ROOT
+rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root)
