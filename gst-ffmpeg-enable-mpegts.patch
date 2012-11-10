@@ -1,0 +1,10 @@
+--- gst-ffmpeg-0.10.12/ext/ffmpeg/gstffmpegdemux.c.mpegts	2011-07-13 11:07:28.000000000 +0200
++++ gst-ffmpeg-0.10.12/ext/ffmpeg/gstffmpegdemux.c	2011-07-21 14:49:42.000000000 +0200
+@@ -1991,6 +1991,7 @@ gst_ffmpegdemux_register (GstPlugin * pl
+         !strcmp (in_plugin->name, "aiff") ||
+         !strcmp (in_plugin->name, "4xm") ||
+         !strcmp (in_plugin->name, "yuv4mpegpipe") ||
++	!strcmp (in_plugin->name, "mpegts") ||
+         !strcmp (in_plugin->name, "mpc") || !strcmp (in_plugin->name, "gif"))
+       rank = GST_RANK_MARGINAL;
+     else {
