@@ -1,9 +1,5 @@
 %define bname gstreamer0.10
-%define name %bname-ffmpeg
 %define oname gst-ffmpeg
-%define version 0.10.13
-%define release %mkrel 2
-%define gstver 0.10.22
 
 # _with = default off, _without = default on
 %bcond_with external_ffmpeg
@@ -15,11 +11,14 @@
 # (gst-launch-0.10:23590): GStreamer-CRITICAL **: gst_value_set_fraction: assertion `denominator != 0' failed
 # No playback in either case.
 
-Summary: Gstreamer plugin for the ffmpeg codec
-Name: %{name}
-Version: %{version}
-Release: %{release}
-Source0: http://gstreamer.freedesktop.org/src/gst-ffmpeg/%{oname}-%{version}.tar.bz2
+Summary:	Gstreamer plugin for the ffmpeg codec
+Name:		%{bname}-ffmpeg
+Version:	0.10.13
+Release:	3
+License:	GPLv2+
+Group:		Video
+URL:		http://www.gstreamer.net
+Source0:	http://gstreamer.freedesktop.org/src/gst-ffmpeg/%{oname}-%{version}.tar.bz2
 # (Anssi 01/2008) Enable mpegts demuxer as well, for now.
 # If either
 # https://core.fluendo.com/gstreamer/trac/ticket/88 or
@@ -27,30 +26,27 @@ Source0: http://gstreamer.freedesktop.org/src/gst-ffmpeg/%{oname}-%{version}.tar
 # will be fixed, we should probably remove this patch and package the
 # "native" non-ffmpeg MPL-licensed fluendo-mpegdemux, which is apparently
 # highly preferred to ffmpeg plugin by upstream.
-Patch0: gst-ffmpeg-enable-mpegts.patch
-Patch1: gst-ffmpeg-fix-format-strings.patch
-License: GPLv2+
-Group: Video
-URL: http://www.gstreamer.net
-BuildRequires: libgstreamer-plugins-base-devel >= %gstver
-BuildRequires: liborc-devel >= 0.4.5
-BuildRequires: freetype2-devel
-BuildRequires: libcheck-devel
-BuildRequires: yasm
-%ifnarch %arm %mips
-BuildRequires: valgrind
+Patch0:		gst-ffmpeg-enable-mpegts.patch
+Patch1:		gst-ffmpeg-fix-format-strings.patch
+Patch2:		gst-ffmpeg-0.10.13-gcc-4.7-1.patch
+BuildRequires:	pkgconfig(check)
+BuildRequires:	pkgconfig(freetype2)
+BuildRequires:	pkgconfig(gstreamer-plugins-base-0.10)
+BuildRequires:	pkgconfig(orc-0.4)
+BuildRequires:	yasm
+%ifnarch %{arm} %{mips}
+BuildRequires:	valgrind
 %endif
-BuildRequires: libbzip2-devel
+BuildRequires:	libbzip2-devel
 %if %with external_ffmpeg
-BuildRequires: ffmpeg-devel
+BuildRequires:	ffmpeg-devel
 %endif
-BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
 
 %description
 Video codec plugin for GStreamer based on the ffmpeg libraries.
 
 %prep
-%setup -q -n %oname-%version
+%setup -q -n %{oname}-%{version}
 %apply_patches
 
 %build
@@ -58,8 +54,8 @@ Video codec plugin for GStreamer based on the ffmpeg libraries.
 # gst-ffmpeg mp3 decoder has issues (eg no seeking support), disable it since
 # gst-plugins-bad and gst-fluendo both ship better mp3 decoders
 %configure2_5x \
-  --with-package-name='Mandriva %name package' \
-  --with-package-origin='http://www.mandriva.com/' \
+  --with-package-name='Rosa %{name} package' \
+  --with-package-origin='http://www.rosalinux.com/' \
   --with-ffmpeg-extra-configure='--disable-decoder=mp3 --disable-decoder=mp3on4 --disable-decoder=mp3adu --disable-demuxer=mp3 --disable-demuxer=asf' \
 %if %with external_ffmpeg
 	--with-system-ffmpeg
@@ -73,17 +69,12 @@ cd tests/check
 #make check
 
 %install
-rm -rf %{buildroot}
 %makeinstall_std
-rm -f %buildroot%_libdir/gstreamer*/*a
-
-%clean
-rm -rf %{buildroot}
+rm -f %{buildroot}%{_libdir}/gstreamer*/*a
 
 %files
-%defattr(-,root,root)
-%doc README NEWS TODO ChangeLog AUTHORS 
-%_libdir/gstreamer-0.10/libgstffmpeg.so
-%_libdir/gstreamer-0.10/libgstffmpegscale.so
-%_libdir/gstreamer-0.10/libgstpostproc.so
+%doc README NEWS TODO ChangeLog AUTHORS
+%{_libdir}/gstreamer-0.10/libgstffmpeg.so
+%{_libdir}/gstreamer-0.10/libgstffmpegscale.so
+%{_libdir}/gstreamer-0.10/libgstpostproc.so
 
