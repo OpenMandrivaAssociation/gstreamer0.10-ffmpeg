@@ -14,7 +14,7 @@
 Summary:	Gstreamer plugin for the ffmpeg codec
 Name:		%{bname}-ffmpeg
 Version:	0.10.13
-Release:	3
+Release:	4
 License:	GPLv2+
 Group:		Video
 URL:		http://www.gstreamer.net
@@ -37,7 +37,7 @@ BuildRequires:	yasm
 %ifnarch %{arm} %{mips}
 BuildRequires:	valgrind
 %endif
-BuildRequires:	libbzip2-devel
+BuildRequires:	bzip2-devel
 %if %with external_ffmpeg
 BuildRequires:	ffmpeg-devel
 %endif
