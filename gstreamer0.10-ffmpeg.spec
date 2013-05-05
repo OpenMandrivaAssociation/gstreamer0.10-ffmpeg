@@ -73,7 +73,7 @@ Video codec plugin for GStreamer based on the ffmpeg libraries.
 %install
 %makeinstall_std
 
-%files -n %{bname}-ffmpeg
+%files
 %doc README NEWS TODO ChangeLog AUTHORS
 %{_libdir}/gstreamer-%{api}/libgstffmpeg.so
 %{_libdir}/gstreamer-%{api}/libgstffmpegscale.so
