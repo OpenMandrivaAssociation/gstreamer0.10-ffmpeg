@@ -1,5 +1,7 @@
-%define bname gstreamer0.10
-%define oname gst-ffmpeg
+%define _disable_ld_no_undefined 1
+%define	api	0.10
+%define	bname	gstreamer%{api}
+%define	oname	gst-ffmpeg
 
 # _with = default off, _without = default on
 %bcond_with external_ffmpeg
@@ -17,7 +19,7 @@ Version:	0.10.13
 Release:	4
 License:	GPLv2+
 Group:		Video
-URL:		http://www.gstreamer.net
+Url:		http://www.gstreamer.net
 Source0:	http://gstreamer.freedesktop.org/src/gst-ffmpeg/%{oname}-%{version}.tar.bz2
 # (Anssi 01/2008) Enable mpegts demuxer as well, for now.
 # If either
@@ -29,15 +31,16 @@ Source0:	http://gstreamer.freedesktop.org/src/gst-ffmpeg/%{oname}-%{version}.tar
 Patch0:		gst-ffmpeg-enable-mpegts.patch
 Patch1:		gst-ffmpeg-fix-format-strings.patch
 Patch2:		gst-ffmpeg-0.10.13-gcc-4.7-1.patch
+
+BuildRequires:	bzip2-devel
 BuildRequires:	pkgconfig(check)
 BuildRequires:	pkgconfig(freetype2)
-BuildRequires:	pkgconfig(gstreamer-plugins-base-0.10)
+BuildRequires:	pkgconfig(gstreamer-plugins-base-%{api})
 BuildRequires:	pkgconfig(orc-0.4)
 BuildRequires:	yasm
 %ifnarch %{arm} %{mips}
 BuildRequires:	valgrind
 %endif
-BuildRequires:	bzip2-devel
 %if %with external_ffmpeg
 BuildRequires:	ffmpeg-devel
 %endif
@@ -46,35 +49,33 @@ BuildRequires:	ffmpeg-devel
 Video codec plugin for GStreamer based on the ffmpeg libraries.
 
 %prep
-%setup -q -n %{oname}-%{version}
+%setup -qn %{oname}-%{version}
 %apply_patches
 
 %build
-%define _disable_ld_no_undefined 1
 # gst-ffmpeg mp3 decoder has issues (eg no seeking support), disable it since
 # gst-plugins-bad and gst-fluendo both ship better mp3 decoders
 %configure2_5x \
-  --with-package-name='Rosa %{name} package' \
-  --with-package-origin='http://www.rosalinux.com/' \
-  --with-ffmpeg-extra-configure='--disable-decoder=mp3 --disable-decoder=mp3on4 --disable-decoder=mp3adu --disable-demuxer=mp3 --disable-demuxer=asf' \
+	--disable-static \
+	--with-package-name='%{distribution} %{name} package' \
+	--with-package-origin='%{disturl}' \
+	--with-ffmpeg-extra-configure='--disable-decoder=mp3 \
+	--disable-decoder=mp3on4 \
+	--disable-decoder=mp3adu \
+	--disable-demuxer=mp3 \
+	--disable-demuxer=asf' \
 %if %with external_ffmpeg
 	--with-system-ffmpeg
 %endif
 
 %make
 
-%check
-cd tests/check
-#gw fails in iurt
-#make check
-
 %install
 %makeinstall_std
-rm -f %{buildroot}%{_libdir}/gstreamer*/*a
 
-%files
+%files -n %{bname}-ffmpeg
 %doc README NEWS TODO ChangeLog AUTHORS
-%{_libdir}/gstreamer-0.10/libgstffmpeg.so
-%{_libdir}/gstreamer-0.10/libgstffmpegscale.so
-%{_libdir}/gstreamer-0.10/libgstpostproc.so
+%{_libdir}/gstreamer-%{api}/libgstffmpeg.so
+%{_libdir}/gstreamer-%{api}/libgstffmpegscale.so
+%{_libdir}/gstreamer-%{api}/libgstpostproc.so
 
