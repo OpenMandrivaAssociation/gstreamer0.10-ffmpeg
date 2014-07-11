@@ -16,7 +16,7 @@
 Summary:	Gstreamer plugin for the ffmpeg codec
 Name:		%{bname}-ffmpeg
 Version:	0.10.13
-Release:	9
+Release:	10
 License:	GPLv2+
 Group:		Video
 Url:		http://www.gstreamer.net
