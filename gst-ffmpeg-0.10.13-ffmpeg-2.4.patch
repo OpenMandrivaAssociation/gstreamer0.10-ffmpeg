@@ -1,0 +1,37 @@
+diff -up gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpeg.c.av_find_stream_info gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpeg.c
+--- gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpeg.c.av_find_stream_info	2014-11-07 18:37:05.834318507 +0100
++++ gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpeg.c	2014-11-07 18:50:47.056592108 +0100
+@@ -73,7 +73,7 @@ gst_ffmpeg_av_find_stream_info (AVFormat
+   int ret;
+ 
+   g_static_mutex_lock (&gst_avcodec_mutex);
+-  ret = av_find_stream_info (ic);
++  ret = avformat_find_stream_info (ic, NULL);
+   g_static_mutex_unlock (&gst_avcodec_mutex);
+ 
+   return ret;
+diff -up gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegenc.c.ffmpeg-2.4 gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegenc.c
+--- gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegenc.c.ffmpeg-2.4	2014-11-07 18:53:43.385928078 +0100
++++ gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegenc.c	2014-11-07 18:55:54.113694973 +0100
+@@ -916,7 +916,7 @@ gst_ffmpegenc_chain_audio (GstPad * pad,
+       ", size %d", GST_TIME_ARGS (timestamp), GST_TIME_ARGS (duration), size);
+ 
+   frame_size = ctx->frame_size;
+-  osize = av_get_bits_per_sample_fmt (ctx->sample_fmt) / 8;
++  osize = av_get_bytes_per_sample (ctx->sample_fmt);
+ 
+   if (frame_size > 1) {
+     /* we have a frame_size, feed the encoder multiples of this frame size */
+diff -up gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegmux.c.ffmpeg-2.4 gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegmux.c
+--- gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegmux.c.ffmpeg-2.4	2014-11-07 18:58:42.476107574 +0100
++++ gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegmux.c	2014-11-07 19:31:39.956447745 +0100
+@@ -334,8 +334,7 @@
+   gst_collect_pads_set_function (ffmpegmux->collect,
+       (GstCollectPadsFunction) gst_ffmpegmux_collected, ffmpegmux);
+ 
+-  ffmpegmux->context = g_new0 (AVFormatContext, 1);
+-  ffmpegmux->context->oformat = oclass->in_plugin;
++  avformat_alloc_output_context2(&ffmpegmux->context, oclass->in_plugin, NULL, NULL);
+   ffmpegmux->context->nb_streams = 0;
+   ffmpegmux->opened = FALSE;
+ 

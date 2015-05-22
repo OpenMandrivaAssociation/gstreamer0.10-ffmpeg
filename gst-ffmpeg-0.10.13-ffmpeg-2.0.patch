@@ -1,0 +1,582 @@
+--- gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpeg.c.0005	2013-07-15 16:06:48.694888728 +0800
++++ gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpeg.c	2013-07-15 16:06:48.714889306 +0800
+@@ -49,7 +49,7 @@
+   int ret;
+ 
+   g_static_mutex_lock (&gst_avcodec_mutex);
+-  ret = avcodec_open (avctx, codec);
++  ret = avcodec_open2 (avctx, codec, NULL);
+   g_static_mutex_unlock (&gst_avcodec_mutex);
+ 
+   return ret;
+--- gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegcfg.c.0005	2013-07-15 16:06:48.694888728 +0800
++++ gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegcfg.c	2013-07-15 16:06:48.714889306 +0800
+@@ -171,26 +171,18 @@
+       {FF_IDCT_INT, "JPEG reference Integer", "int"},
+       {FF_IDCT_SIMPLE, "Simple", "simple"},
+       {FF_IDCT_SIMPLEMMX, "Simple MMX", "simplemmx"},
+-      {FF_IDCT_LIBMPEG2MMX, "LIBMPEG2MMX", "libmpeg2mmx"},
+-      {FF_IDCT_MMI, "MMI", "mmi"},
+       {FF_IDCT_ARM, "ARM", "arm"},
+       {FF_IDCT_ALTIVEC, "ALTIVEC", "altivec"},
+       {FF_IDCT_SH4, "SH4", "sh4"},
+       {FF_IDCT_SIMPLEARM, "SIMPLEARM", "simplearm"},
+-      {FF_IDCT_H264, "H264", "h264"},
+-      {FF_IDCT_VP3, "VP3", "vp3"},
+       {FF_IDCT_IPP, "IPP", "ipp"},
+       {FF_IDCT_XVIDMMX, "XVIDMMX", "xvidmmx"},
+-      {FF_IDCT_CAVS, "CAVS", "cavs"},
+       {FF_IDCT_SIMPLEARMV5TE, "SIMPLEARMV5TE", "simplearmv5te"},
+       {FF_IDCT_SIMPLEARMV6, "SIMPLEARMV6", "simplearmv6"},
+       {FF_IDCT_SIMPLEVIS, "SIMPLEVIS", "simplevis"},
+-      {FF_IDCT_WMV2, "WMV2", "wmv2"},
+       {FF_IDCT_FAAN, "FAAN", "faan"},
+-      {FF_IDCT_EA, "EA", "ea"},
+       {FF_IDCT_SIMPLENEON, "SIMPLENEON", "simpleneon"},
+       {FF_IDCT_SIMPLEALPHA, "SIMPLEALPHA", "simplealpha"},
+-      {FF_IDCT_BINK, "BINK", "bink"},
+       {0, NULL, NULL},
+     };
+ 
+@@ -299,9 +291,6 @@
+ #if 0
+       {CODEC_FLAG_H263P_UMV, "Unlimited Motion Vector", "umv"},
+ #endif
+-      {CODEC_FLAG_CBP_RD, "Rate Distoration Optimization for CBP", "cbp-rd"},
+-      {CODEC_FLAG_QP_RD, "Rate Distoration Optimization for QP selection",
+-          "qp-rd"},
+ #if 0
+       {CODEC_FLAG_H263P_SLICE_STRUCT, "H263 slice struct", "ss"},
+       {CODEC_FLAG_SVCD_SCAN_OFFSET,
+@@ -745,7 +734,7 @@
+ 
+ /* return TRUE if property described by pspec applies to the codec with codec_id */
+ static gboolean
+-gst_ffmpeg_cfg_codec_has_pspec (enum CodecID codec_id, GParamSpec * pspec)
++gst_ffmpeg_cfg_codec_has_pspec (enum AVCodecID codec_id, GParamSpec * pspec)
+ {
+   GParamSpecData *qdata;
+   gint *codec;
+@@ -786,9 +775,9 @@
+   prop_id = base;
+   g_return_if_fail (base > 0);
+ 
+-  ctx = avcodec_alloc_context ();
++  ctx = avcodec_alloc_context3 (NULL);
+   if (ctx)
+-    avcodec_get_context_defaults (ctx);
++    avcodec_get_context_defaults3 (ctx, NULL);
+   else
+     g_warning ("could not get context");
+ 
+--- gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegcodecmap.c.0005	2013-07-15 16:06:48.714889306 +0800
++++ gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegcodecmap.c	2013-07-15 16:06:48.714889306 +0800
+@@ -189,7 +189,7 @@
+  * but I'm too lazy today. Maybe later.
+  */
+ static GstCaps *
+-gst_ff_vid_caps_new (AVCodecContext * context, enum CodecID codec_id,
++gst_ff_vid_caps_new (AVCodecContext * context, enum AVCodecID codec_id,
+     const char *mimetype, const char *fieldname, ...)
+ {
+   GstStructure *structure = NULL;
+@@ -331,7 +331,7 @@
+ /* same for audio - now with channels/sample rate
+  */
+ static GstCaps *
+-gst_ff_aud_caps_new (AVCodecContext * context, enum CodecID codec_id,
++gst_ff_aud_caps_new (AVCodecContext * context, enum AVCodecID codec_id,
+     const char *mimetype, const char *fieldname, ...)
+ {
+   GstCaps *caps = NULL;
+@@ -507,7 +507,7 @@
+  * to a GstCaps. If the context is ommitted, no fixed values
+  * for video/audio size will be included in the GstCaps
+  *
+- * CodecID is primarily meant for compressed data GstCaps!
++ * AVCodecID is primarily meant for compressed data GstCaps!
+  *
+  * encode is a special parameter. gstffmpegdec will say
+  * FALSE, gstffmpegenc will say TRUE. The output caps
+@@ -520,7 +520,7 @@
+  */
+ 
+ GstCaps *
+-gst_ffmpeg_codecid_to_caps (enum CodecID codec_id,
++gst_ffmpeg_codecid_to_caps (enum AVCodecID codec_id,
+     AVCodecContext * context, gboolean encode)
+ {
+   GstCaps *caps = NULL;
+@@ -620,7 +620,6 @@
+           "systemstream", G_TYPE_BOOLEAN, FALSE,
+           "rmversion", G_TYPE_INT, version, NULL);
+       if (context) {
+-        gst_caps_set_simple (caps, "format", G_TYPE_INT, context->sub_id, NULL);
+         if (context->extradata_size >= 8) {
+           gst_caps_set_simple (caps,
+               "subformat", G_TYPE_INT, GST_READ_UINT32_BE (context->extradata),
+@@ -1716,7 +1715,7 @@
+ 
+ GstCaps *
+ gst_ffmpeg_pixfmt_to_caps (enum PixelFormat pix_fmt, AVCodecContext * context,
+-    enum CodecID codec_id)
++    enum AVCodecID codec_id)
+ {
+   GstCaps *caps = NULL;
+ 
+@@ -1862,7 +1861,7 @@
+ 
+ static GstCaps *
+ gst_ffmpeg_smpfmt_to_caps (enum AVSampleFormat sample_fmt,
+-    AVCodecContext * context, enum CodecID codec_id)
++    AVCodecContext * context, enum AVCodecID codec_id)
+ {
+   GstCaps *caps = NULL;
+ 
+@@ -1923,7 +1922,7 @@
+ 
+ GstCaps *
+ gst_ffmpeg_codectype_to_audio_caps (AVCodecContext * context,
+-    enum CodecID codec_id, gboolean encode, AVCodec * codec)
++    enum AVCodecID codec_id, gboolean encode, AVCodec * codec)
+ {
+   GstCaps *caps = NULL;
+ 
+@@ -1966,7 +1965,7 @@
+ 
+ GstCaps *
+ gst_ffmpeg_codectype_to_video_caps (AVCodecContext * context,
+-    enum CodecID codec_id, gboolean encode, AVCodec * codec)
++    enum AVCodecID codec_id, gboolean encode, AVCodec * codec)
+ {
+   GstCaps *caps;
+ 
+@@ -2002,7 +2001,7 @@
+ 
+ GstCaps *
+ gst_ffmpeg_codectype_to_caps (enum AVMediaType codec_type,
+-    AVCodecContext * context, enum CodecID codec_id, gboolean encode)
++    AVCodecContext * context, enum AVCodecID codec_id, gboolean encode)
+ {
+   GstCaps *caps;
+ 
+@@ -2341,7 +2340,7 @@
+  */
+ 
+ void
+-gst_ffmpeg_caps_with_codecid (enum CodecID codec_id,
++gst_ffmpeg_caps_with_codecid (enum AVCodecID codec_id,
+     enum AVMediaType codec_type, const GstCaps * caps, AVCodecContext * context)
+ {
+   GstStructure *str;
+@@ -2487,9 +2486,6 @@
+     {
+       gint format;
+ 
+-      if (gst_structure_get_int (str, "format", &format))
+-        context->sub_id = format;
+-
+       break;
+     }
+     case CODEC_ID_COOK:
+@@ -2711,14 +2707,14 @@
+ 
+ gboolean
+ gst_ffmpeg_formatid_get_codecids (const gchar * format_name,
+-    enum CodecID ** video_codec_list, enum CodecID ** audio_codec_list,
++    enum AVCodecID ** video_codec_list, enum AVCodecID ** audio_codec_list,
+     AVOutputFormat * plugin)
+ {
+-  static enum CodecID tmp_vlist[] = {
++  static enum AVCodecID tmp_vlist[] = {
+     CODEC_ID_NONE,
+     CODEC_ID_NONE
+   };
+-  static enum CodecID tmp_alist[] = {
++  static enum AVCodecID tmp_alist[] = {
+     CODEC_ID_NONE,
+     CODEC_ID_NONE
+   };
+@@ -2726,12 +2722,12 @@
+   GST_LOG ("format_name : %s", format_name);
+ 
+   if (!strcmp (format_name, "mp4")) {
+-    static enum CodecID mp4_video_list[] = {
++    static enum AVCodecID mp4_video_list[] = {
+       CODEC_ID_MPEG4, CODEC_ID_H264,
+       CODEC_ID_MJPEG,
+       CODEC_ID_NONE
+     };
+-    static enum CodecID mp4_audio_list[] = {
++    static enum AVCodecID mp4_audio_list[] = {
+       CODEC_ID_AAC, CODEC_ID_MP3,
+       CODEC_ID_NONE
+     };
+@@ -2739,12 +2735,12 @@
+     *video_codec_list = mp4_video_list;
+     *audio_codec_list = mp4_audio_list;
+   } else if (!strcmp (format_name, "mpeg")) {
+-    static enum CodecID mpeg_video_list[] = { CODEC_ID_MPEG1VIDEO,
++    static enum AVCodecID mpeg_video_list[] = { CODEC_ID_MPEG1VIDEO,
+       CODEC_ID_MPEG2VIDEO,
+       CODEC_ID_H264,
+       CODEC_ID_NONE
+     };
+-    static enum CodecID mpeg_audio_list[] = { CODEC_ID_MP1,
++    static enum AVCodecID mpeg_audio_list[] = { CODEC_ID_MP1,
+       CODEC_ID_MP2,
+       CODEC_ID_MP3,
+       CODEC_ID_NONE
+@@ -2753,10 +2749,10 @@
+     *video_codec_list = mpeg_video_list;
+     *audio_codec_list = mpeg_audio_list;
+   } else if (!strcmp (format_name, "dvd")) {
+-    static enum CodecID mpeg_video_list[] = { CODEC_ID_MPEG2VIDEO,
++    static enum AVCodecID mpeg_video_list[] = { CODEC_ID_MPEG2VIDEO,
+       CODEC_ID_NONE
+     };
+-    static enum CodecID mpeg_audio_list[] = { CODEC_ID_MP2,
++    static enum AVCodecID mpeg_audio_list[] = { CODEC_ID_MP2,
+       CODEC_ID_AC3,
+       CODEC_ID_DTS,
+       CODEC_ID_PCM_S16BE,
+@@ -2766,12 +2762,12 @@
+     *video_codec_list = mpeg_video_list;
+     *audio_codec_list = mpeg_audio_list;
+   } else if (!strcmp (format_name, "mpegts")) {
+-    static enum CodecID mpegts_video_list[] = { CODEC_ID_MPEG1VIDEO,
++    static enum AVCodecID mpegts_video_list[] = { CODEC_ID_MPEG1VIDEO,
+       CODEC_ID_MPEG2VIDEO,
+       CODEC_ID_H264,
+       CODEC_ID_NONE
+     };
+-    static enum CodecID mpegts_audio_list[] = { CODEC_ID_MP2,
++    static enum AVCodecID mpegts_audio_list[] = { CODEC_ID_MP2,
+       CODEC_ID_MP3,
+       CODEC_ID_AC3,
+       CODEC_ID_DTS,
+@@ -2782,43 +2778,43 @@
+     *video_codec_list = mpegts_video_list;
+     *audio_codec_list = mpegts_audio_list;
+   } else if (!strcmp (format_name, "vob")) {
+-    static enum CodecID vob_video_list[] =
++    static enum AVCodecID vob_video_list[] =
+         { CODEC_ID_MPEG2VIDEO, CODEC_ID_NONE };
+-    static enum CodecID vob_audio_list[] = { CODEC_ID_MP2, CODEC_ID_AC3,
++    static enum AVCodecID vob_audio_list[] = { CODEC_ID_MP2, CODEC_ID_AC3,
+       CODEC_ID_DTS, CODEC_ID_NONE
+     };
+ 
+     *video_codec_list = vob_video_list;
+     *audio_codec_list = vob_audio_list;
+   } else if (!strcmp (format_name, "flv")) {
+-    static enum CodecID flv_video_list[] = { CODEC_ID_FLV1, CODEC_ID_NONE };
+-    static enum CodecID flv_audio_list[] = { CODEC_ID_MP3, CODEC_ID_NONE };
++    static enum AVCodecID flv_video_list[] = { CODEC_ID_FLV1, CODEC_ID_NONE };
++    static enum AVCodecID flv_audio_list[] = { CODEC_ID_MP3, CODEC_ID_NONE };
+ 
+     *video_codec_list = flv_video_list;
+     *audio_codec_list = flv_audio_list;
+   } else if (!strcmp (format_name, "asf")) {
+-    static enum CodecID asf_video_list[] =
++    static enum AVCodecID asf_video_list[] =
+         { CODEC_ID_WMV1, CODEC_ID_WMV2, CODEC_ID_MSMPEG4V3, CODEC_ID_NONE };
+-    static enum CodecID asf_audio_list[] =
++    static enum AVCodecID asf_audio_list[] =
+         { CODEC_ID_WMAV1, CODEC_ID_WMAV2, CODEC_ID_MP3, CODEC_ID_NONE };
+ 
+     *video_codec_list = asf_video_list;
+     *audio_codec_list = asf_audio_list;
+   } else if (!strcmp (format_name, "dv")) {
+-    static enum CodecID dv_video_list[] = { CODEC_ID_DVVIDEO, CODEC_ID_NONE };
+-    static enum CodecID dv_audio_list[] = { CODEC_ID_PCM_S16LE, CODEC_ID_NONE };
++    static enum AVCodecID dv_video_list[] = { CODEC_ID_DVVIDEO, CODEC_ID_NONE };
++    static enum AVCodecID dv_audio_list[] = { CODEC_ID_PCM_S16LE, CODEC_ID_NONE };
+ 
+     *video_codec_list = dv_video_list;
+     *audio_codec_list = dv_audio_list;
+   } else if (!strcmp (format_name, "mov")) {
+-    static enum CodecID mov_video_list[] = {
++    static enum AVCodecID mov_video_list[] = {
+       CODEC_ID_SVQ1, CODEC_ID_SVQ3, CODEC_ID_MPEG4,
+       CODEC_ID_H263, CODEC_ID_H263P,
+       CODEC_ID_H264, CODEC_ID_DVVIDEO,
+       CODEC_ID_MJPEG,
+       CODEC_ID_NONE
+     };
+-    static enum CodecID mov_audio_list[] = {
++    static enum AVCodecID mov_audio_list[] = {
+       CODEC_ID_PCM_MULAW, CODEC_ID_PCM_ALAW, CODEC_ID_ADPCM_IMA_QT,
+       CODEC_ID_MACE3, CODEC_ID_MACE6, CODEC_ID_AAC,
+       CODEC_ID_AMR_NB, CODEC_ID_AMR_WB,
+@@ -2829,11 +2825,11 @@
+     *video_codec_list = mov_video_list;
+     *audio_codec_list = mov_audio_list;
+   } else if ((!strcmp (format_name, "3gp") || !strcmp (format_name, "3g2"))) {
+-    static enum CodecID tgp_video_list[] = {
++    static enum AVCodecID tgp_video_list[] = {
+       CODEC_ID_MPEG4, CODEC_ID_H263, CODEC_ID_H263P, CODEC_ID_H264,
+       CODEC_ID_NONE
+     };
+-    static enum CodecID tgp_audio_list[] = {
++    static enum AVCodecID tgp_audio_list[] = {
+       CODEC_ID_AMR_NB, CODEC_ID_AMR_WB,
+       CODEC_ID_AAC,
+       CODEC_ID_NONE
+@@ -2842,20 +2838,20 @@
+     *video_codec_list = tgp_video_list;
+     *audio_codec_list = tgp_audio_list;
+   } else if (!strcmp (format_name, "mmf")) {
+-    static enum CodecID mmf_audio_list[] = {
++    static enum AVCodecID mmf_audio_list[] = {
+       CODEC_ID_ADPCM_YAMAHA, CODEC_ID_NONE
+     };
+     *video_codec_list = NULL;
+     *audio_codec_list = mmf_audio_list;
+   } else if (!strcmp (format_name, "amr")) {
+-    static enum CodecID amr_audio_list[] = {
++    static enum AVCodecID amr_audio_list[] = {
+       CODEC_ID_AMR_NB, CODEC_ID_AMR_WB,
+       CODEC_ID_NONE
+     };
+     *video_codec_list = NULL;
+     *audio_codec_list = amr_audio_list;
+   } else if (!strcmp (format_name, "gif")) {
+-    static enum CodecID gif_image_list[] = {
++    static enum AVCodecID gif_image_list[] = {
+       CODEC_ID_RAWVIDEO, CODEC_ID_NONE
+     };
+     *video_codec_list = gif_image_list;
+@@ -2882,10 +2878,10 @@
+  * optional extra info
+  */
+ 
+-enum CodecID
++enum AVCodecID
+ gst_ffmpeg_caps_to_codecid (const GstCaps * caps, AVCodecContext * context)
+ {
+-  enum CodecID id = CODEC_ID_NONE;
++  enum AVCodecID id = CODEC_ID_NONE;
+   const gchar *mimetype;
+   const GstStructure *structure;
+   gboolean video = FALSE, audio = FALSE;        /* we want to be sure! */
+--- gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegcodecmap.h.0005	2011-07-13 17:07:28.000000000 +0800
++++ gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegcodecmap.h	2013-07-15 16:06:48.714889306 +0800
+@@ -31,11 +31,11 @@
+ 
+ /*
+  * _codecid_to_caps () gets the GstCaps that belongs to
+- * a certain CodecID for a pad with compressed data.
++ * a certain AVCodecID for a pad with compressed data.
+  */
+ 
+ GstCaps *
+-gst_ffmpeg_codecid_to_caps   (enum CodecID    codec_id,
++gst_ffmpeg_codecid_to_caps   (enum AVCodecID    codec_id,
+                               AVCodecContext *context,
+                               gboolean        encode);
+ 
+@@ -47,16 +47,16 @@
+ GstCaps *
+ gst_ffmpeg_codectype_to_caps (enum AVMediaType  codec_type,
+                               AVCodecContext *context, 
+-                              enum CodecID codec_id,
++                              enum AVCodecID codec_id,
+                               gboolean encode);
+ GstCaps *
+ gst_ffmpeg_codectype_to_audio_caps (AVCodecContext *context, 
+-                              enum CodecID codec_id,
++                              enum AVCodecID codec_id,
+ 				    gboolean encode,
+ 				    AVCodec *codec);
+ GstCaps *
+ gst_ffmpeg_codectype_to_video_caps (AVCodecContext *context, 
+-                              enum CodecID codec_id,
++                              enum AVCodecID codec_id,
+ 				    gboolean encode,
+ 				    AVCodec *codec);
+ 
+@@ -66,7 +66,7 @@
+  * context and a codecID.
+  */
+ 
+-enum CodecID
++enum AVCodecID
+ gst_ffmpeg_caps_to_codecid (const GstCaps  *caps,
+                             AVCodecContext *context);
+ 
+@@ -76,7 +76,7 @@
+  */
+ 
+ void
+-gst_ffmpeg_caps_with_codecid (enum CodecID    codec_id,
++gst_ffmpeg_caps_with_codecid (enum AVCodecID    codec_id,
+                               enum AVMediaType  codec_type,
+                               const GstCaps  *caps,
+                               AVCodecContext *context);
+@@ -109,7 +109,7 @@
+  */
+ 
+ GstCaps *
+-gst_ffmpeg_pixfmt_to_caps (enum PixelFormat pix_fmt, AVCodecContext * context, enum CodecID codec_id);
++gst_ffmpeg_pixfmt_to_caps (enum PixelFormat pix_fmt, AVCodecContext * context, enum AVCodecID codec_id);
+ 
+ /*
+  * _formatid_get_codecids () can be used to get the codecIDs
+@@ -119,8 +119,8 @@
+ 
+ gboolean
+ gst_ffmpeg_formatid_get_codecids (const gchar *format_name,
+-                                  enum CodecID ** video_codec_list,
+-                                  enum CodecID ** audio_codec_list,
++                                  enum AVCodecID ** video_codec_list,
++                                  enum AVCodecID ** audio_codec_list,
+ 				  AVOutputFormat * plugin);
+ 
+ 
+--- gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegdec.c.0005	2013-07-15 16:06:48.714889306 +0800
++++ gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegdec.c	2013-07-15 16:10:09.490685762 +0800
+@@ -432,7 +432,7 @@
+   gst_element_add_pad (GST_ELEMENT (ffmpegdec), ffmpegdec->srcpad);
+ 
+   /* some ffmpeg data */
+-  ffmpegdec->context = avcodec_alloc_context ();
++  ffmpegdec->context = avcodec_alloc_context3 (NULL);
+   ffmpegdec->picture = avcodec_alloc_frame ();
+   ffmpegdec->pctx = NULL;
+   ffmpegdec->pcache = NULL;
+@@ -756,7 +756,7 @@
+     gst_ffmpegdec_close (ffmpegdec);
+ 
+     /* and reset the defaults that were set when a context is created */
+-    avcodec_get_context_defaults (ffmpegdec->context);
++    avcodec_get_context_defaults3 (ffmpegdec->context, NULL);
+   }
+ 
+   /* set buffer functions */
+@@ -2124,7 +2124,7 @@
+     const GstTSInfo * dec_info, GstBuffer ** outbuf, GstFlowReturn * ret)
+ {
+   gint len = -1;
+-  gint have_data = AVCODEC_MAX_AUDIO_FRAME_SIZE;
++  gint have_data = 192000;
+   GstClockTime out_timestamp, out_duration;
+   gint64 out_offset;
+   AVPacket packet;
+@@ -2137,7 +2137,7 @@
+       GST_TIME_ARGS (dec_info->duration), GST_TIME_ARGS (ffmpegdec->next_out));
+ 
+   *outbuf =
+-      new_aligned_buffer (AVCODEC_MAX_AUDIO_FRAME_SIZE,
++      new_aligned_buffer (192000,
+       GST_PAD_CAPS (ffmpegdec->srcpad));
+ 
+   if ( (ffmpegdec->context->sample_fmt == AV_SAMPLE_FMT_S16P)
+@@ -2145,7 +2145,7 @@
+     || (ffmpegdec->context->sample_fmt == AV_SAMPLE_FMT_FLTP)
+     || (ffmpegdec->context->sample_fmt == AV_SAMPLE_FMT_DBLP) )
+   {
+-  	av_out_buf = av_malloc(AVCODEC_MAX_AUDIO_FRAME_SIZE); // broken ):
++  	av_out_buf = av_malloc(192000); // broken ):
+   }
+   else
+     av_out_buf = (uint8_t *)GST_BUFFER_DATA (*outbuf);
+--- gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegdeinterlace.c.0005	2013-07-15 16:09:02.518752359 +0800
++++ gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegdeinterlace.c	2013-07-15 16:09:07.288890066 +0800
+@@ -207,7 +207,7 @@
+   gst_structure_get_boolean (structure, "interlaced", &deinterlace->interlaced);
+   gst_ffmpegdeinterlace_update_passthrough (deinterlace);
+ 
+-  ctx = avcodec_alloc_context ();
++  ctx = avcodec_alloc_context3 (NULL);
+   ctx->width = deinterlace->width;
+   ctx->height = deinterlace->height;
+   ctx->pix_fmt = PIX_FMT_NB;
+--- gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegenc.c.0005	2013-07-15 16:06:48.704889017 +0800
++++ gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegenc.c	2013-07-15 16:10:30.611295489 +0800
+@@ -248,7 +248,7 @@
+   gst_pad_use_fixed_caps (ffmpegenc->srcpad);
+ 
+   /* ffmpeg objects */
+-  ffmpegenc->context = avcodec_alloc_context ();
++  ffmpegenc->context = avcodec_alloc_context3 (NULL);
+   ffmpegenc->picture = avcodec_alloc_frame ();
+   ffmpegenc->opened = FALSE;
+ 
+@@ -448,7 +448,7 @@
+ 
+     /* need to start with a fresh codec_context each time around, since
+      * codec_close may have released stuff causing the next pass to segfault */
+-    ctx = avcodec_alloc_context ();
++    ctx = avcodec_alloc_context3 (NULL);
+     if (!ctx) {
+       GST_DEBUG_OBJECT (ffmpegenc, "no context");
+       break;
+@@ -532,7 +532,7 @@
+   }
+ 
+   /* set defaults */
+-  avcodec_get_context_defaults (ffmpegenc->context);
++  avcodec_get_context_defaults3 (ffmpegenc->context, NULL);
+ 
+   /* if we set it in _getcaps we should set it also in _link */
+   ffmpegenc->context->strict_std_compliance = -1;
+@@ -572,7 +572,6 @@
+   ffmpegenc->context->coder_type = 0;
+   ffmpegenc->context->context_model = 0;
+   ffmpegenc->context->scenechange_threshold = 0;
+-  ffmpegenc->context->inter_threshold = 0;
+ 
+   /* and last but not least the pass; CBR, 2-pass, etc */
+   ffmpegenc->context->flags |= ffmpegenc->pass;
+--- gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegmux.c.0005	2013-07-15 16:06:48.704889017 +0800
++++ gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegmux.c	2013-07-15 16:06:48.714889306 +0800
+@@ -128,7 +128,7 @@
+ static void gst_ffmpegmux_get_property (GObject * object, guint prop_id,
+     GValue * value, GParamSpec * pspec);
+ 
+-static GstCaps *gst_ffmpegmux_get_id_caps (enum CodecID *id_list);
++static GstCaps *gst_ffmpegmux_get_id_caps (enum AVCodecID *id_list);
+ static void gst_ffmpeg_mux_simple_caps_set_int_list (GstCaps * caps,
+     const gchar * field, guint num, const gint * values);
+ 
+@@ -201,7 +201,7 @@
+   GstPadTemplate *videosinktempl, *audiosinktempl, *srctempl;
+   AVOutputFormat *in_plugin;
+   GstCaps *srccaps, *audiosinkcaps, *videosinkcaps;
+-  enum CodecID *video_ids = NULL, *audio_ids = NULL;
++  enum AVCodecID *video_ids = NULL, *audio_ids = NULL;
+   gchar *longname, *description;
+   const char *replacement;
+   gboolean is_formatter;
+@@ -813,7 +813,7 @@
+ }
+ 
+ static GstCaps *
+-gst_ffmpegmux_get_id_caps (enum CodecID *id_list)
++gst_ffmpegmux_get_id_caps (enum AVCodecID *id_list)
+ {
+   GstCaps *caps, *t;
+   gint i;
+--- gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegutils.c.0005	2013-07-15 16:06:48.704889017 +0800
++++ gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegutils.c	2013-07-15 16:06:48.714889306 +0800
+@@ -27,7 +27,7 @@
+ #endif
+ 
+ G_CONST_RETURN gchar *
+-gst_ffmpeg_get_codecid_longname (enum CodecID codec_id)
++gst_ffmpeg_get_codecid_longname (enum AVCodecID codec_id)
+ {
+   AVCodec *codec;
+   /* Let's use what ffmpeg can provide us */
+--- gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegutils.h.0005	2013-07-15 16:06:48.704889017 +0800
++++ gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegutils.h	2013-07-15 16:06:48.714889306 +0800
+@@ -84,7 +84,7 @@
+ gst_ffmpeg_auto_max_threads(void);
+ 
+ G_CONST_RETURN gchar *
+-gst_ffmpeg_get_codecid_longname (enum CodecID codec_id);
++gst_ffmpeg_get_codecid_longname (enum AVCodecID codec_id);
+ 
+ gint
+ av_smp_format_depth(enum AVSampleFormat smp_fmt);

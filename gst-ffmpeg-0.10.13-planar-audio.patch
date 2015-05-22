@@ -1,0 +1,101 @@
+diff -up gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegcodecmap.c.planar-audio gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegcodecmap.c
+--- gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegcodecmap.c.planar-audio	2013-02-11 22:28:42.510045677 +0100
++++ gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegcodecmap.c	2013-02-11 22:28:42.607044642 +0100
+@@ -1872,21 +1872,25 @@ gst_ffmpeg_smpfmt_to_caps (enum AVSample
+ 
+   switch (sample_fmt) {
+     case AV_SAMPLE_FMT_S16:
++    case AV_SAMPLE_FMT_S16P:
+       signedness = TRUE;
+       bpp = 16;
+       break;
+ 
+     case AV_SAMPLE_FMT_S32:
++    case AV_SAMPLE_FMT_S32P:
+       signedness = TRUE;
+       bpp = 32;
+       break;
+ 
+     case AV_SAMPLE_FMT_FLT:
++    case AV_SAMPLE_FMT_FLTP:
+       integer = FALSE;
+       bpp = 32;
+       break;
+ 
+     case AV_SAMPLE_FMT_DBL:
++    case AV_SAMPLE_FMT_DBLP:
+       integer = FALSE;
+       bpp = 64;
+       break;
+diff -up gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegdec.c.planar-audio gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegdec.c
+--- gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegdec.c.planar-audio	2013-02-11 22:28:42.518045593 +0100
++++ gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegdec.c	2013-02-12 01:37:27.009104390 +0100
+@@ -2128,6 +2128,7 @@ gst_ffmpegdec_audio_frame (GstFFMpegDec
+   GstClockTime out_timestamp, out_duration;
+   gint64 out_offset;
+   AVPacket packet;
++  uint8_t * av_out_buf;
+ 
+   GST_DEBUG_OBJECT (ffmpegdec,
+       "size:%d, offset:%" G_GINT64_FORMAT ", ts:%" GST_TIME_FORMAT ", dur:%"
+@@ -2139,9 +2140,19 @@ gst_ffmpegdec_audio_frame (GstFFMpegDec
+       new_aligned_buffer (AVCODEC_MAX_AUDIO_FRAME_SIZE,
+       GST_PAD_CAPS (ffmpegdec->srcpad));
+ 
++  if ( (ffmpegdec->context->sample_fmt == AV_SAMPLE_FMT_S16P)
++    || (ffmpegdec->context->sample_fmt == AV_SAMPLE_FMT_S32P)
++    || (ffmpegdec->context->sample_fmt == AV_SAMPLE_FMT_FLTP)
++    || (ffmpegdec->context->sample_fmt == AV_SAMPLE_FMT_DBLP) )
++  {
++  	av_out_buf = av_malloc(AVCODEC_MAX_AUDIO_FRAME_SIZE); // broken ):
++  }
++  else
++    av_out_buf = (uint8_t *)GST_BUFFER_DATA (*outbuf);
++
+   gst_avpacket_init (&packet, data, size);
+   len = avcodec_decode_audio3 (ffmpegdec->context,
+-      (int16_t *) GST_BUFFER_DATA (*outbuf), &have_data, &packet);
++      (int16_t *) av_out_buf, &have_data, &packet);
+   GST_DEBUG_OBJECT (ffmpegdec,
+       "Decode audio: len=%d, have_data=%d", len, have_data);
+ 
+@@ -2153,6 +2164,39 @@ gst_ffmpegdec_audio_frame (GstFFMpegDec
+       len = -1;
+       goto beach;
+     }
++#define PLANAR2SCALAR(SAMPLETYPE) \
++      int num_samples = have_data/(sizeof(SAMPLETYPE)*ffmpegdec->context->channels); \
++      SAMPLETYPE const *in[16]; /* 16 channels is enough for everyone ): */ \
++      SAMPLETYPE * out = (SAMPLETYPE *)GST_BUFFER_DATA (*outbuf); \
++      int i; \
++      int j; \
++      \
++      for (i = 0; i < ffmpegdec->context->channels; ++i) \
++        in[i] = ((SAMPLETYPE *)av_out_buf) + i * num_samples; \
++      for (i = 0; i < num_samples; ++i) \
++      { \
++        for (j = 0; j < ffmpegdec->context->channels; ++j) \
++          out[i * ffmpegdec->context->channels + j] = in[j][i]; \
++      } \
++      av_free(av_out_buf);
++
++    if (ffmpegdec->context->sample_fmt == AV_SAMPLE_FMT_S16P)
++    {
++      PLANAR2SCALAR(uint16_t)
++    }
++    else if (ffmpegdec->context->sample_fmt == AV_SAMPLE_FMT_FLTP)
++    {
++      PLANAR2SCALAR(float)
++    }
++    else if (ffmpegdec->context->sample_fmt == AV_SAMPLE_FMT_S32P)
++    {
++      PLANAR2SCALAR(uint32_t)
++    }
++    else if (ffmpegdec->context->sample_fmt == AV_SAMPLE_FMT_DBLP)
++    {
++      PLANAR2SCALAR(double)
++    }
++#undef PLANAR2SCALAR
+ 
+     /* Buffer size */
+     GST_BUFFER_SIZE (*outbuf) = have_data;
