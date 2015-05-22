@@ -4,19 +4,11 @@
 %define	oname	gst-ffmpeg
 
 # _with = default off, _without = default on
-%bcond_with external_ffmpeg
+%bcond_without external_ffmpeg
 
-# (Anssi 01/2008) External ffmpeg disabled because of issues:
-# with FLV file with totem:
-# ** ERROR:(gstffmpegdec.c:731):gst_ffmpegdec_get_buffer: code should not be reached
-# with VDR stream as per manual pipeline in http://bugzilla.gnome.org/show_bug.cgi?id=506902 :
-# (gst-launch-0.10:23590): GStreamer-CRITICAL **: gst_value_set_fraction: assertion `denominator != 0' failed
-# No playback in either case.
-
-Summary:	Gstreamer plugin for the ffmpeg codec
 Name:		%{bname}-ffmpeg
 Version:	0.10.13
-Release:	11
+Release:	12
 License:	GPLv2+
 Group:		Video
 Url:		http://www.gstreamer.net
@@ -31,6 +23,10 @@ Source0:	http://gstreamer.freedesktop.org/src/gst-ffmpeg/%{oname}-%{version}.tar
 Patch0:		gst-ffmpeg-enable-mpegts.patch
 Patch1:		gst-ffmpeg-fix-format-strings.patch
 Patch2:		gst-ffmpeg-0.10.13-gcc-4.7-1.patch
+Patch3: gst-ffmpeg-0.10.13-ffmpeg-1.0.patch
+Patch4:	gst-ffmpeg-0.10.13-planar-audio.patch
+Patch5: gst-ffmpeg-0.10.13-ffmpeg-2.0.patch
+Patch6: gst-ffmpeg-0.10.13-ffmpeg-2.4.patch
 
 BuildRequires:	bzip2-devel
 BuildRequires:	pkgconfig(check)
