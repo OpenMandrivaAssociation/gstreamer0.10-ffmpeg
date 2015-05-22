@@ -1,0 +1,966 @@
+diff -p -up gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpeg.c.ffmpeg-1_0 gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpeg.c
+--- gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpeg.c.ffmpeg-1_0	2011-10-31 11:14:03.000000000 +0100
++++ gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpeg.c	2012-12-01 06:13:21.403534874 +0100
+@@ -151,9 +151,6 @@ plugin_init (GstPlugin * plugin)
+ #endif
+   gst_ffmpegaudioresample_register (plugin);
+ 
+-  av_register_protocol2 (&gstreamer_protocol, sizeof (URLProtocol));
+-  av_register_protocol2 (&gstpipe_protocol, sizeof (URLProtocol));
+-
+   /* Now we can return the pointer to the newly created Plugin object. */
+   return TRUE;
+ }
+diff -p -up gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegcfg.c.ffmpeg-1_0 gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegcfg.c
+--- gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegcfg.c.ffmpeg-1_0	2011-07-12 16:35:27.000000000 +0200
++++ gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegcfg.c	2012-12-01 06:13:21.415534733 +0100
+@@ -147,7 +147,6 @@ gst_ffmpeg_dct_algo_get_type (void)
+       {FF_DCT_FASTINT, "Fast Integer", "fastint"},
+       {FF_DCT_INT, "Accurate Integer", "int"},
+       {FF_DCT_MMX, "MMX", "mmx"},
+-      {FF_DCT_MLIB, "MLIB", "mlib"},
+       {FF_DCT_ALTIVEC, "ALTIVEC", "altivec"},
+       {FF_DCT_FAAN, "FAAN", "faan"},
+       {0, NULL, NULL},
+@@ -173,8 +172,7 @@ gst_ffmpeg_idct_algo_get_type (void)
+       {FF_IDCT_SIMPLE, "Simple", "simple"},
+       {FF_IDCT_SIMPLEMMX, "Simple MMX", "simplemmx"},
+       {FF_IDCT_LIBMPEG2MMX, "LIBMPEG2MMX", "libmpeg2mmx"},
+-      {FF_IDCT_PS2, "PS2", "ps2"},
+-      {FF_IDCT_MLIB, "MLIB", "mlib"},
++      {FF_IDCT_MMI, "MMI", "mmi"},
+       {FF_IDCT_ARM, "ARM", "arm"},
+       {FF_IDCT_ALTIVEC, "ALTIVEC", "altivec"},
+       {FF_IDCT_SH4, "SH4", "sh4"},
+@@ -183,6 +181,16 @@ gst_ffmpeg_idct_algo_get_type (void)
+       {FF_IDCT_VP3, "VP3", "vp3"},
+       {FF_IDCT_IPP, "IPP", "ipp"},
+       {FF_IDCT_XVIDMMX, "XVIDMMX", "xvidmmx"},
++      {FF_IDCT_CAVS, "CAVS", "cavs"},
++      {FF_IDCT_SIMPLEARMV5TE, "SIMPLEARMV5TE", "simplearmv5te"},
++      {FF_IDCT_SIMPLEARMV6, "SIMPLEARMV6", "simplearmv6"},
++      {FF_IDCT_SIMPLEVIS, "SIMPLEVIS", "simplevis"},
++      {FF_IDCT_WMV2, "WMV2", "wmv2"},
++      {FF_IDCT_FAAN, "FAAN", "faan"},
++      {FF_IDCT_EA, "EA", "ea"},
++      {FF_IDCT_SIMPLENEON, "SIMPLENEON", "simpleneon"},
++      {FF_IDCT_SIMPLEALPHA, "SIMPLEALPHA", "simplealpha"},
++      {FF_IDCT_BINK, "BINK", "bink"},
+       {0, NULL, NULL},
+     };
+ 
+@@ -263,16 +271,22 @@ gst_ffmpeg_flags_get_type (void)
+ 
+   if (!ffmpeg_flags_type) {
+     static const GFlagsValue ffmpeg_flags[] = {
++#if 0
+       {CODEC_FLAG_OBMC, "Use overlapped block motion compensation (h263+)",
+           "obmc"},
++#endif
+       {CODEC_FLAG_QSCALE, "Use fixed qscale", "qscale"},
+       {CODEC_FLAG_4MV, "Allow 4 MV per MB", "4mv"},
++#if 0
+       {CODEC_FLAG_H263P_AIV, "H.263 alternative inter VLC", "aiv"},
++#endif
+       {CODEC_FLAG_QPEL, "Quartel Pel Motion Compensation", "qpel"},
+       {CODEC_FLAG_GMC, "GMC", "gmc"},
+       {CODEC_FLAG_MV0, "Always try a MB with MV (0,0)", "mv0"},
++#if 0
+       {CODEC_FLAG_PART,
+           "Store MV, DC and AC coefficients in seperate partitions", "part"},
++#endif
+       {CODEC_FLAG_LOOP_FILTER, "Loop filter", "loop-filter"},
+       {CODEC_FLAG_GRAY, "Only decode/encode grayscale", "gray"},
+       {CODEC_FLAG_NORMALIZE_AQP,
+@@ -282,13 +296,17 @@ gst_ffmpeg_flags_get_type (void)
+           "global-headers"},
+       {CODEC_FLAG_AC_PRED, "H263 Advanced Intra Coding / MPEG4 AC prediction",
+           "aic"},
++#if 0
+       {CODEC_FLAG_H263P_UMV, "Unlimited Motion Vector", "umv"},
++#endif
+       {CODEC_FLAG_CBP_RD, "Rate Distoration Optimization for CBP", "cbp-rd"},
+       {CODEC_FLAG_QP_RD, "Rate Distoration Optimization for QP selection",
+           "qp-rd"},
++#if 0
+       {CODEC_FLAG_H263P_SLICE_STRUCT, "H263 slice struct", "ss"},
+       {CODEC_FLAG_SVCD_SCAN_OFFSET,
+           "Reserve space for SVCD scan offset user data", "scanoffset"},
++#endif
+       {CODEC_FLAG_CLOSED_GOP, "Closed GOP", "closedgop"},
+       {0, NULL, NULL},
+     };
+@@ -592,6 +610,7 @@ gst_ffmpeg_cfg_init (void)
+       -100, G_MAXINT, 0, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS);
+   gst_ffmpeg_add_pspec (pspec, max_key_interval, FALSE, mpeg, NULL);
+ 
++/*
+   pspec = g_param_spec_int ("luma-elim-threshold",
+       "Luma Elimination Threshold",
+       "Luma Single Coefficient Elimination Threshold",
+@@ -603,6 +622,7 @@ gst_ffmpeg_cfg_init (void)
+       "Chroma Single Coefficient Elimination Threshold",
+       -99, 99, 0, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS);
+   gst_ffmpeg_add_pspec (pspec, config.chroma_elim_threshold, FALSE, mpeg, NULL);
++*/
+ 
+   pspec = g_param_spec_float ("lumi-masking", "Luminance Masking",
+       "Luminance Masking", -1.0f, 1.0f, 0.0f,
+diff -p -up gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegcodecmap.c.ffmpeg-1_0 gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegcodecmap.c
+--- gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegcodecmap.c.ffmpeg-1_0	2011-10-31 11:14:03.000000000 +0100
++++ gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegcodecmap.c	2012-12-01 06:13:21.430534560 +0100
+@@ -42,6 +42,7 @@
+ static void
+ gst_ffmpeg_get_palette (const GstCaps * caps, AVCodecContext * context)
+ {
++#if 0
+   GstStructure *str = gst_caps_get_structure (caps, 0);
+   const GValue *palette_v;
+   const GstBuffer *palette;
+@@ -58,11 +59,13 @@ gst_ffmpeg_get_palette (const GstCaps *
+           AVPALETTE_SIZE);
+     }
+   }
++#endif
+ }
+ 
+ static void
+ gst_ffmpeg_set_palette (GstCaps * caps, AVCodecContext * context)
+ {
++#if 0
+   if (context->palctrl) {
+     GstBuffer *palette = gst_buffer_new_and_alloc (AVPALETTE_SIZE);
+ 
+@@ -70,6 +73,7 @@ gst_ffmpeg_set_palette (GstCaps * caps,
+         AVPALETTE_SIZE);
+     gst_caps_set_simple (caps, "palette_data", GST_TYPE_BUFFER, palette, NULL);
+   }
++#endif
+ }
+ 
+ /* IMPORTANT: Keep this sorted by the ffmpeg channel masks */
+@@ -79,26 +83,26 @@ static const struct
+   GstAudioChannelPosition gst;
+ } _ff_to_gst_layout[] = {
+   {
+-  CH_FRONT_LEFT, GST_AUDIO_CHANNEL_POSITION_FRONT_LEFT}, {
+-  CH_FRONT_RIGHT, GST_AUDIO_CHANNEL_POSITION_FRONT_RIGHT}, {
+-  CH_FRONT_CENTER, GST_AUDIO_CHANNEL_POSITION_FRONT_CENTER}, {
+-  CH_LOW_FREQUENCY, GST_AUDIO_CHANNEL_POSITION_LFE}, {
+-  CH_BACK_LEFT, GST_AUDIO_CHANNEL_POSITION_REAR_LEFT}, {
+-  CH_BACK_RIGHT, GST_AUDIO_CHANNEL_POSITION_REAR_RIGHT}, {
+-  CH_FRONT_LEFT_OF_CENTER, GST_AUDIO_CHANNEL_POSITION_FRONT_LEFT_OF_CENTER}, {
+-  CH_FRONT_RIGHT_OF_CENTER, GST_AUDIO_CHANNEL_POSITION_FRONT_RIGHT_OF_CENTER}, {
+-  CH_BACK_CENTER, GST_AUDIO_CHANNEL_POSITION_REAR_CENTER}, {
+-  CH_SIDE_LEFT, GST_AUDIO_CHANNEL_POSITION_SIDE_LEFT}, {
+-  CH_SIDE_RIGHT, GST_AUDIO_CHANNEL_POSITION_SIDE_RIGHT}, {
+-  CH_TOP_CENTER, GST_AUDIO_CHANNEL_POSITION_NONE}, {
+-  CH_TOP_FRONT_LEFT, GST_AUDIO_CHANNEL_POSITION_NONE}, {
+-  CH_TOP_FRONT_CENTER, GST_AUDIO_CHANNEL_POSITION_NONE}, {
+-  CH_TOP_FRONT_RIGHT, GST_AUDIO_CHANNEL_POSITION_NONE}, {
+-  CH_TOP_BACK_LEFT, GST_AUDIO_CHANNEL_POSITION_NONE}, {
+-  CH_TOP_BACK_CENTER, GST_AUDIO_CHANNEL_POSITION_NONE}, {
+-  CH_TOP_BACK_RIGHT, GST_AUDIO_CHANNEL_POSITION_NONE}, {
+-  CH_STEREO_LEFT, GST_AUDIO_CHANNEL_POSITION_FRONT_LEFT}, {
+-  CH_STEREO_RIGHT, GST_AUDIO_CHANNEL_POSITION_FRONT_RIGHT}
++  AV_CH_FRONT_LEFT, GST_AUDIO_CHANNEL_POSITION_FRONT_LEFT}, {
++  AV_CH_FRONT_RIGHT, GST_AUDIO_CHANNEL_POSITION_FRONT_RIGHT}, {
++  AV_CH_FRONT_CENTER, GST_AUDIO_CHANNEL_POSITION_FRONT_CENTER}, {
++  AV_CH_LOW_FREQUENCY, GST_AUDIO_CHANNEL_POSITION_LFE}, {
++  AV_CH_BACK_LEFT, GST_AUDIO_CHANNEL_POSITION_REAR_LEFT}, {
++  AV_CH_BACK_RIGHT, GST_AUDIO_CHANNEL_POSITION_REAR_RIGHT}, {
++  AV_CH_FRONT_LEFT_OF_CENTER, GST_AUDIO_CHANNEL_POSITION_FRONT_LEFT_OF_CENTER}, {
++  AV_CH_FRONT_RIGHT_OF_CENTER, GST_AUDIO_CHANNEL_POSITION_FRONT_RIGHT_OF_CENTER}, {
++  AV_CH_BACK_CENTER, GST_AUDIO_CHANNEL_POSITION_REAR_CENTER}, {
++  AV_CH_SIDE_LEFT, GST_AUDIO_CHANNEL_POSITION_SIDE_LEFT}, {
++  AV_CH_SIDE_RIGHT, GST_AUDIO_CHANNEL_POSITION_SIDE_RIGHT}, {
++  AV_CH_TOP_CENTER, GST_AUDIO_CHANNEL_POSITION_NONE}, {
++  AV_CH_TOP_FRONT_LEFT, GST_AUDIO_CHANNEL_POSITION_NONE}, {
++  AV_CH_TOP_FRONT_CENTER, GST_AUDIO_CHANNEL_POSITION_NONE}, {
++  AV_CH_TOP_FRONT_RIGHT, GST_AUDIO_CHANNEL_POSITION_NONE}, {
++  AV_CH_TOP_BACK_LEFT, GST_AUDIO_CHANNEL_POSITION_NONE}, {
++  AV_CH_TOP_BACK_CENTER, GST_AUDIO_CHANNEL_POSITION_NONE}, {
++  AV_CH_TOP_BACK_RIGHT, GST_AUDIO_CHANNEL_POSITION_NONE}, {
++  AV_CH_STEREO_LEFT, GST_AUDIO_CHANNEL_POSITION_FRONT_LEFT}, {
++  AV_CH_STEREO_RIGHT, GST_AUDIO_CHANNEL_POSITION_FRONT_RIGHT}
+ };
+ 
+ static GstAudioChannelPosition *
+@@ -342,8 +346,8 @@ gst_ff_aud_caps_new (AVCodecContext * co
+ 
+     if (channel_layout == 0) {
+       const guint64 default_channel_set[] = {
+-        0, 0, CH_LAYOUT_SURROUND, CH_LAYOUT_QUAD, CH_LAYOUT_5POINT0,
+-        CH_LAYOUT_5POINT1, 0, CH_LAYOUT_7POINT1
++        0, 0, AV_CH_LAYOUT_SURROUND, AV_CH_LAYOUT_QUAD, AV_CH_LAYOUT_5POINT0,
++        AV_CH_LAYOUT_5POINT1, 0, AV_CH_LAYOUT_7POINT1
+       };
+ 
+       switch (codec_id) {
+@@ -1857,7 +1861,7 @@ gst_ffmpeg_pixfmt_to_caps (enum PixelFor
+  */
+ 
+ static GstCaps *
+-gst_ffmpeg_smpfmt_to_caps (enum SampleFormat sample_fmt,
++gst_ffmpeg_smpfmt_to_caps (enum AVSampleFormat sample_fmt,
+     AVCodecContext * context, enum CodecID codec_id)
+ {
+   GstCaps *caps = NULL;
+@@ -1867,22 +1871,22 @@ gst_ffmpeg_smpfmt_to_caps (enum SampleFo
+   gboolean signedness = FALSE;
+ 
+   switch (sample_fmt) {
+-    case SAMPLE_FMT_S16:
++    case AV_SAMPLE_FMT_S16:
+       signedness = TRUE;
+       bpp = 16;
+       break;
+ 
+-    case SAMPLE_FMT_S32:
++    case AV_SAMPLE_FMT_S32:
+       signedness = TRUE;
+       bpp = 32;
+       break;
+ 
+-    case SAMPLE_FMT_FLT:
++    case AV_SAMPLE_FMT_FLT:
+       integer = FALSE;
+       bpp = 32;
+       break;
+ 
+-    case SAMPLE_FMT_DBL:
++    case AV_SAMPLE_FMT_DBL:
+       integer = FALSE;
+       bpp = 64;
+       break;
+@@ -1941,12 +1945,12 @@ gst_ffmpeg_codectype_to_audio_caps (AVCo
+     }
+   } else {
+     GstCaps *temp;
+-    enum SampleFormat i;
++    enum AVSampleFormat i;
+     AVCodecContext ctx = { 0, };
+ 
+     ctx.channels = -1;
+     caps = gst_caps_new_empty ();
+-    for (i = 0; i <= SAMPLE_FMT_DBL; i++) {
++    for (i = 0; i <= AV_SAMPLE_FMT_DBL; i++) {
+       temp = gst_ffmpeg_smpfmt_to_caps (i, encode ? &ctx : NULL, codec_id);
+       if (temp != NULL) {
+         gst_caps_append (caps, temp);
+@@ -2049,9 +2053,9 @@ gst_ffmpeg_caps_to_smpfmt (const GstCaps
+         gst_structure_get_int (structure, "endianness", &endianness)) {
+       if (endianness == G_BYTE_ORDER) {
+         if (width == 32)
+-          context->sample_fmt = SAMPLE_FMT_FLT;
++          context->sample_fmt = AV_SAMPLE_FMT_FLT;
+         else if (width == 64)
+-          context->sample_fmt = SAMPLE_FMT_DBL;
++          context->sample_fmt = AV_SAMPLE_FMT_DBL;
+       }
+     }
+   } else {
+@@ -2062,9 +2066,9 @@ gst_ffmpeg_caps_to_smpfmt (const GstCaps
+         gst_structure_get_int (structure, "endianness", &endianness)) {
+       if ((endianness == G_BYTE_ORDER) && (signedness == TRUE)) {
+         if ((width == 16) && (depth == 16))
+-          context->sample_fmt = SAMPLE_FMT_S16;
++          context->sample_fmt = AV_SAMPLE_FMT_S16;
+         else if ((width == 32) && (depth == 32))
+-          context->sample_fmt = SAMPLE_FMT_S32;
++          context->sample_fmt = AV_SAMPLE_FMT_S32;
+       }
+     }
+   }
+diff -p -up gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegdec.c.ffmpeg-1_0 gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegdec.c
+--- gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegdec.c.ffmpeg-1_0	2011-11-02 14:04:05.000000000 +0100
++++ gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegdec.c	2012-12-01 06:13:21.445534384 +0100
+@@ -608,10 +608,12 @@ gst_ffmpegdec_close (GstFFMpegDec * ffmp
+     gst_ffmpeg_avcodec_close (ffmpegdec->context);
+   ffmpegdec->opened = FALSE;
+ 
++#if 0
+   if (ffmpegdec->context->palctrl) {
+     av_free (ffmpegdec->context->palctrl);
+     ffmpegdec->context->palctrl = NULL;
+   }
++#endif
+ 
+   if (ffmpegdec->context->extradata) {
+     av_free (ffmpegdec->context->extradata);
+@@ -864,7 +866,7 @@ gst_ffmpegdec_setcaps (GstPad * pad, Gst
+ 
+   /* workaround encoder bugs */
+   ffmpegdec->context->workaround_bugs |= FF_BUG_AUTODETECT;
+-  ffmpegdec->context->error_recognition = 1;
++  ffmpegdec->context->err_recognition = AV_EF_CRCCHECK;
+ 
+   /* for slow cpus */
+   ffmpegdec->context->lowres = ffmpegdec->lowres;
+@@ -944,7 +946,8 @@ alloc_output_buffer (GstFFMpegDec * ffmp
+   fsize = gst_ffmpeg_avpicture_get_size (ffmpegdec->context->pix_fmt,
+       width, height);
+ 
+-  if (!ffmpegdec->context->palctrl && ffmpegdec->can_allocate_aligned) {
++  /* !ffmpegdec->context->palctrl &&  */
++  if (ffmpegdec->can_allocate_aligned) {
+     GST_LOG_OBJECT (ffmpegdec, "calling pad_alloc");
+     /* no pallete, we can use the buffer size to alloc */
+     ret = gst_pad_alloc_buffer_and_set_caps (ffmpegdec->srcpad,
+@@ -1083,7 +1086,6 @@ gst_ffmpegdec_get_buffer (AVCodecContext
+   /* tell ffmpeg we own this buffer, tranfer the ref we have on the buffer to
+    * the opaque data. */
+   picture->type = FF_BUFFER_TYPE_USER;
+-  picture->age = 256 * 256 * 256 * 64;
+   picture->opaque = buf;
+ 
+ #ifdef EXTRA_REF
+@@ -1543,12 +1545,12 @@ check_keyframe (GstFFMpegDec * ffmpegdec
+ 
+   /* remember that we have B frames, we need this for the DTS -> PTS conversion
+    * code */
+-  if (!ffmpegdec->has_b_frames && ffmpegdec->picture->pict_type == FF_B_TYPE) {
++  if (!ffmpegdec->has_b_frames && ffmpegdec->picture->pict_type == AV_PICTURE_TYPE_B) {
+     GST_DEBUG_OBJECT (ffmpegdec, "we have B frames");
+     ffmpegdec->has_b_frames = TRUE;
+   }
+ 
+-  is_itype = (ffmpegdec->picture->pict_type == FF_I_TYPE);
++  is_itype = (ffmpegdec->picture->pict_type == AV_PICTURE_TYPE_I);
+   is_reference = (ffmpegdec->picture->reference == 1);
+ 
+   iskeyframe = (is_itype || is_reference || ffmpegdec->picture->key_frame)
+@@ -2000,10 +2002,12 @@ gst_ffmpegdec_video_frame (GstFFMpegDec
+   else
+     ffmpegdec->next_out = -1;
+ 
++#if 0
+   /* palette is not part of raw video frame in gst and the size
+    * of the outgoing buffer needs to be adjusted accordingly */
+   if (ffmpegdec->context->palctrl != NULL)
+     GST_BUFFER_SIZE (*outbuf) -= AVPALETTE_SIZE;
++#endif
+ 
+   /* now see if we need to clip the buffer against the segment boundaries. */
+   if (G_UNLIKELY (!clip_video_buffer (ffmpegdec, *outbuf, out_timestamp,
+diff -p -up gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegdemux.c.ffmpeg-1_0 gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegdemux.c
+--- gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegdemux.c.ffmpeg-1_0	2011-07-13 11:07:28.000000000 +0200
++++ gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegdemux.c	2012-12-01 06:13:21.458534232 +0100
+@@ -343,8 +343,11 @@ gst_ffmpegdemux_close (GstFFMpegDemux *
+   demux->audiopads = 0;
+ 
+   /* close demuxer context from ffmpeg */
+-  av_close_input_file (demux->context);
+-  demux->context = NULL;
++  if (demux->seekable)
++    gst_ffmpegdata_close(demux->context->pb);
++  else
++    gst_ffmpeg_pipe_close(demux->context->pb);
++  avformat_close_input (&demux->context);
+ 
+   GST_OBJECT_LOCK (demux);
+   demux->opened = FALSE;
+@@ -1146,9 +1149,9 @@ gst_ffmpegdemux_read_tags (GstFFMpegDemu
+ static gboolean
+ gst_ffmpegdemux_open (GstFFMpegDemux * demux)
+ {
++  AVIOContext * iocontext = NULL;
+   GstFFMpegDemuxClass *oclass =
+       (GstFFMpegDemuxClass *) G_OBJECT_GET_CLASS (demux);
+-  gchar *location;
+   gint res, n_streams, i;
+ #if 0
+   /* Re-enable once converted to new AVMetaData API
+@@ -1164,15 +1167,18 @@ gst_ffmpegdemux_open (GstFFMpegDemux * d
+ 
+   /* open via our input protocol hack */
+   if (demux->seekable)
+-    location = g_strdup_printf ("gstreamer://%p", demux->sinkpad);
++    res = gst_ffmpegdata_open(demux->sinkpad, AVIO_FLAG_READ, &iocontext);
+   else
+-    location = g_strdup_printf ("gstpipe://%p", &demux->ffpipe);
+-  GST_DEBUG_OBJECT (demux, "about to call av_open_input_file %s", location);
++    res = gst_ffmpeg_pipe_open(&demux->ffpipe, AVIO_FLAG_READ, &iocontext);
++
++  GST_DEBUG_OBJECT (demux, "%s returned %d", demux->seekable ? "gst_ffmpegdata_open" : "gst_ffmpeg_pipe_open", res);
++  if (res < 0)
++    goto open_failed;
+ 
+-  res = av_open_input_file (&demux->context, location,
+-      oclass->in_plugin, 0, NULL);
++  demux->context = avformat_alloc_context();
++  demux->context->pb = iocontext;
++  res = avformat_open_input(&demux->context, NULL, oclass->in_plugin, NULL);
+ 
+-  g_free (location);
+   GST_DEBUG_OBJECT (demux, "av_open_input returned %d", res);
+   if (res < 0)
+     goto open_failed;
+diff -p -up gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegenc.c.ffmpeg-1_0 gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegenc.c
+--- gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegenc.c.ffmpeg-1_0	2011-10-31 11:14:03.000000000 +0100
++++ gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegenc.c	2012-12-01 06:13:21.472534068 +0100
+@@ -770,7 +770,7 @@ gst_ffmpegenc_chain_video (GstPad * pad,
+   GST_OBJECT_UNLOCK (ffmpegenc);
+ 
+   if (force_keyframe)
+-    ffmpegenc->picture->pict_type = FF_I_TYPE;
++    ffmpegenc->picture->pict_type = AV_PICTURE_TYPE_I;
+ 
+   frame_size = gst_ffmpeg_avpicture_fill ((AVPicture *) ffmpegenc->picture,
+       GST_BUFFER_DATA (inbuf),
+@@ -917,7 +917,7 @@ gst_ffmpegenc_chain_audio (GstPad * pad,
+       ", size %d", GST_TIME_ARGS (timestamp), GST_TIME_ARGS (duration), size);
+ 
+   frame_size = ctx->frame_size;
+-  osize = av_get_bits_per_sample_format (ctx->sample_fmt) / 8;
++  osize = av_get_bits_per_sample_fmt (ctx->sample_fmt) / 8;
+ 
+   if (frame_size > 1) {
+     /* we have a frame_size, feed the encoder multiples of this frame size */
+@@ -1136,7 +1136,7 @@ gst_ffmpegenc_event_video (GstPad * pad,
+       const GstStructure *s;
+       s = gst_event_get_structure (event);
+       if (gst_structure_has_name (s, "GstForceKeyUnit")) {
+-        ffmpegenc->picture->pict_type = FF_I_TYPE;
++        ffmpegenc->picture->pict_type = AV_PICTURE_TYPE_I;
+       }
+       break;
+     }
+@@ -1339,7 +1339,7 @@ gst_ffmpegenc_register (GstPlugin * plug
+     }
+ 
+     /* only encoders */
+-    if (!in_plugin->encode) {
++    if (!in_plugin->encode2) {
+       goto next;
+     }
+ 
+diff -p -up gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpeg.h.ffmpeg-1_0 gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpeg.h
+--- gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpeg.h.ffmpeg-1_0	2011-05-17 10:53:16.000000000 +0200
++++ gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpeg.h	2012-12-01 06:13:21.484533928 +0100
+@@ -58,10 +58,13 @@ int gst_ffmpeg_avcodec_open (AVCodecCont
+ int gst_ffmpeg_avcodec_close (AVCodecContext *avctx);
+ int gst_ffmpeg_av_find_stream_info(AVFormatContext *ic);
+ 
+-G_END_DECLS
++int gst_ffmpegdata_open (GstPad * pad, int flags, AVIOContext ** context);
++int gst_ffmpegdata_close (AVIOContext * h);
++typedef struct _GstFFMpegPipe GstFFMpegPipe;
++int gst_ffmpeg_pipe_open (GstFFMpegPipe *ffpipe, int flags, AVIOContext ** context);
++int gst_ffmpeg_pipe_close (AVIOContext * h);
+ 
+-extern URLProtocol gstreamer_protocol;
+-extern URLProtocol gstpipe_protocol;
++G_END_DECLS
+ 
+ /* use GST_FFMPEG URL_STREAMHEADER with URL_WRONLY if the first
+  * buffer should be used as streamheader property on the pad's caps. */
+diff -p -up gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegmux.c.ffmpeg-1_0 gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegmux.c
+--- gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegmux.c.ffmpeg-1_0	2011-07-13 11:07:28.000000000 +0200
++++ gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegmux.c	2012-12-01 06:13:21.495533800 +0100
+@@ -26,6 +26,7 @@
+ #include <avformat.h>
+ #else
+ #include <libavformat/avformat.h>
++#include <libavutil/opt.h>
+ #endif
+ 
+ #include <gst/gst.h>
+@@ -336,9 +337,6 @@ gst_ffmpegmux_init (GstFFMpegMux * ffmpe
+   ffmpegmux->context = g_new0 (AVFormatContext, 1);
+   ffmpegmux->context->oformat = oclass->in_plugin;
+   ffmpegmux->context->nb_streams = 0;
+-  g_snprintf (ffmpegmux->context->filename,
+-      sizeof (ffmpegmux->context->filename),
+-      "gstreamer://%p", ffmpegmux->srcpad);
+   ffmpegmux->opened = FALSE;
+ 
+   ffmpegmux->videopads = 0;
+@@ -450,10 +448,10 @@ gst_ffmpegmux_request_new_pad (GstElemen
+   gst_element_add_pad (element, pad);
+ 
+   /* AVStream needs to be created */
+-  st = av_new_stream (ffmpegmux->context, collect_pad->padnum);
++  st = avformat_new_stream (ffmpegmux->context, NULL);
++  st->id = collect_pad->padnum;
+   st->codec->codec_type = type;
+   st->codec->codec_id = CODEC_ID_NONE;  /* this is a check afterwards */
+-  st->stream_copy = 1;          /* we're not the actual encoder */
+   st->codec->bit_rate = bitrate;
+   st->codec->frame_size = framesize;
+   /* we fill in codec during capsnego */
+@@ -485,7 +483,7 @@ gst_ffmpegmux_setcaps (GstPad * pad, Gst
+   collect_pad = (GstFFMpegMuxPad *) gst_pad_get_element_private (pad);
+ 
+   st = ffmpegmux->context->streams[collect_pad->padnum];
+-  ffmpegmux->context->preload = ffmpegmux->preload;
++  av_opt_set_int(&ffmpegmux->context, "preload", ffmpegmux->preload, 0);
+   ffmpegmux->context->max_delay = ffmpegmux->max_delay;
+ 
+   /* for the format-specific guesses, we'll go to
+@@ -552,7 +550,7 @@ gst_ffmpegmux_collected (GstCollectPads
+ 
+   /* open "file" (gstreamer protocol to next element) */
+   if (!ffmpegmux->opened) {
+-    int open_flags = URL_WRONLY;
++    int open_flags = AVIO_FLAG_WRITE;
+ 
+     /* we do need all streams to have started capsnego,
+      * or things will go horribly wrong */
+@@ -646,21 +644,14 @@ gst_ffmpegmux_collected (GstCollectPads
+       open_flags |= GST_FFMPEG_URL_STREAMHEADER;
+     }
+ 
+-    if (url_fopen (&ffmpegmux->context->pb,
+-            ffmpegmux->context->filename, open_flags) < 0) {
++    if (gst_ffmpegdata_open (ffmpegmux->srcpad, open_flags, &ffmpegmux->context->pb) < 0) {
+       GST_ELEMENT_ERROR (ffmpegmux, LIBRARY, TOO_LAZY, (NULL),
+           ("Failed to open stream context in ffmux"));
+       return GST_FLOW_ERROR;
+     }
+ 
+-    if (av_set_parameters (ffmpegmux->context, NULL) < 0) {
+-      GST_ELEMENT_ERROR (ffmpegmux, LIBRARY, INIT, (NULL),
+-          ("Failed to initialize muxer"));
+-      return GST_FLOW_ERROR;
+-    }
+-
+     /* now open the mux format */
+-    if (av_write_header (ffmpegmux->context) < 0) {
++    if (avformat_write_header (ffmpegmux->context, NULL) < 0) {
+       GST_ELEMENT_ERROR (ffmpegmux, LIBRARY, SETTINGS, (NULL),
+           ("Failed to write file header - check codec settings"));
+       return GST_FLOW_ERROR;
+@@ -670,7 +661,7 @@ gst_ffmpegmux_collected (GstCollectPads
+     ffmpegmux->opened = TRUE;
+ 
+     /* flush the header so it will be used as streamheader */
+-    put_flush_packet (ffmpegmux->context->pb);
++    avio_flush (ffmpegmux->context->pb);
+   }
+ 
+   /* take the one with earliest timestamp,
+@@ -770,8 +761,8 @@ gst_ffmpegmux_collected (GstCollectPads
+     /* close down */
+     av_write_trailer (ffmpegmux->context);
+     ffmpegmux->opened = FALSE;
+-    put_flush_packet (ffmpegmux->context->pb);
+-    url_fclose (ffmpegmux->context->pb);
++    avio_flush (ffmpegmux->context->pb);
++    gst_ffmpegdata_close (ffmpegmux->context->pb);
+     gst_pad_push_event (ffmpegmux->srcpad, gst_event_new_eos ());
+     return GST_FLOW_UNEXPECTED;
+   }
+@@ -809,7 +800,7 @@ gst_ffmpegmux_change_state (GstElement *
+       gst_tag_setter_reset_tags (GST_TAG_SETTER (ffmpegmux));
+       if (ffmpegmux->opened) {
+         ffmpegmux->opened = FALSE;
+-        url_fclose (ffmpegmux->context->pb);
++        gst_ffmpegdata_close (ffmpegmux->context->pb);
+       }
+       break;
+     case GST_STATE_CHANGE_READY_TO_NULL:
+diff -p -up gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegprotocol.c.ffmpeg-1_0 gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegprotocol.c
+--- gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegprotocol.c.ffmpeg-1_0	2011-07-12 16:35:28.000000000 +0200
++++ gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegprotocol.c	2012-12-01 14:21:32.581959153 +0100
+@@ -46,63 +46,15 @@ struct _GstProtocolInfo
+ };
+ 
+ static int
+-gst_ffmpegdata_open (URLContext * h, const char *filename, int flags)
+-{
+-  GstProtocolInfo *info;
+-  GstPad *pad;
+-
+-  GST_LOG ("Opening %s", filename);
+-
+-  info = g_new0 (GstProtocolInfo, 1);
+-
+-  info->set_streamheader = flags & GST_FFMPEG_URL_STREAMHEADER;
+-  flags &= ~GST_FFMPEG_URL_STREAMHEADER;
+-  h->flags &= ~GST_FFMPEG_URL_STREAMHEADER;
+-
+-  /* we don't support R/W together */
+-  if (flags != URL_RDONLY && flags != URL_WRONLY) {
+-    GST_WARNING ("Only read-only or write-only are supported");
+-    return -EINVAL;
+-  }
+-
+-  if (sscanf (&filename[12], "%p", &pad) != 1) {
+-    GST_WARNING ("could not decode pad from %s", filename);
+-    return -EIO;
+-  }
+-
+-  /* make sure we're a pad and that we're of the right type */
+-  g_return_val_if_fail (GST_IS_PAD (pad), -EINVAL);
+-
+-  switch (flags) {
+-    case URL_RDONLY:
+-      g_return_val_if_fail (GST_PAD_IS_SINK (pad), -EINVAL);
+-      break;
+-    case URL_WRONLY:
+-      g_return_val_if_fail (GST_PAD_IS_SRC (pad), -EINVAL);
+-      break;
+-  }
+-
+-  info->eos = FALSE;
+-  info->pad = pad;
+-  info->offset = 0;
+-
+-  h->priv_data = (void *) info;
+-  h->is_streamed = FALSE;
+-  h->max_packet_size = 0;
+-
+-  return 0;
+-}
+-
+-static int
+-gst_ffmpegdata_peek (URLContext * h, unsigned char *buf, int size)
++gst_ffmpegdata_peek (void * priv_data, unsigned char *buf, int size)
+ {
+   GstProtocolInfo *info;
+   GstBuffer *inbuf = NULL;
+   GstFlowReturn ret;
+   int total = 0;
+ 
+-  g_return_val_if_fail (h->flags == URL_RDONLY, AVERROR (EIO));
+-  info = (GstProtocolInfo *) h->priv_data;
++  info = (GstProtocolInfo *) priv_data;
++  g_return_val_if_fail (GST_PAD_IS_SINK (info->pad), AVERROR (EIO));
+ 
+   GST_DEBUG ("Pulling %d bytes at position %" G_GUINT64_FORMAT, size,
+       info->offset);
+@@ -134,17 +86,17 @@ gst_ffmpegdata_peek (URLContext * h, uns
+ }
+ 
+ static int
+-gst_ffmpegdata_read (URLContext * h, unsigned char *buf, int size)
++gst_ffmpegdata_read (void * priv_data, unsigned char *buf, int size)
+ {
+   gint res;
+   GstProtocolInfo *info;
+ 
+-  info = (GstProtocolInfo *) h->priv_data;
++  info = (GstProtocolInfo *) priv_data;
+ 
+   GST_DEBUG ("Reading %d bytes of data at position %" G_GUINT64_FORMAT, size,
+       info->offset);
+ 
+-  res = gst_ffmpegdata_peek (h, buf, size);
++  res = gst_ffmpegdata_peek (priv_data, buf, size);
+   if (res >= 0)
+     info->offset += res;
+ 
+@@ -154,15 +106,15 @@ gst_ffmpegdata_read (URLContext * h, uns
+ }
+ 
+ static int
+-gst_ffmpegdata_write (URLContext * h, const unsigned char *buf, int size)
++gst_ffmpegdata_write (void * priv_data, const unsigned char *buf, int size)
+ {
+   GstProtocolInfo *info;
+   GstBuffer *outbuf;
+ 
+   GST_DEBUG ("Writing %d bytes", size);
+-  info = (GstProtocolInfo *) h->priv_data;
++  info = (GstProtocolInfo *) priv_data;
+ 
+-  g_return_val_if_fail (h->flags != URL_RDONLY, -EIO);
++  g_return_val_if_fail (GST_PAD_IS_SRC (info->pad), -EIO);
+ 
+   /* create buffer and push data further */
+   if (gst_pad_alloc_buffer_and_set_caps (info->pad,
+@@ -179,7 +131,7 @@ gst_ffmpegdata_write (URLContext * h, co
+ }
+ 
+ static int64_t
+-gst_ffmpegdata_seek (URLContext * h, int64_t pos, int whence)
++gst_ffmpegdata_seek (void * priv_data, int64_t pos, int whence)
+ {
+   GstProtocolInfo *info;
+   guint64 newpos = 0;
+@@ -187,12 +139,11 @@ gst_ffmpegdata_seek (URLContext * h, int
+   GST_DEBUG ("Seeking to %" G_GINT64_FORMAT ", whence=%d",
+       (gint64) pos, whence);
+ 
+-  info = (GstProtocolInfo *) h->priv_data;
++  info = (GstProtocolInfo *) priv_data;
+ 
+   /* TODO : if we are push-based, we need to return sensible info */
+ 
+-  switch (h->flags) {
+-    case URL_RDONLY:
++  if (GST_PAD_IS_SINK (info->pad))
+     {
+       /* sinkpad */
+       switch (whence) {
+@@ -225,8 +176,7 @@ gst_ffmpegdata_seek (URLContext * h, int
+       if (whence != AVSEEK_SIZE)
+         info->offset = newpos;
+     }
+-      break;
+-    case URL_WRONLY:
++  else if (GST_PAD_IS_SRC (info->pad))
+     {
+       /* srcpad */
+       switch (whence) {
+@@ -247,47 +197,95 @@ gst_ffmpegdata_seek (URLContext * h, int
+       }
+       newpos = info->offset;
+     }
+-      break;
+-    default:
++  else
++    {
+       g_assert (0);
+-      break;
+-  }
++    }
+ 
+   GST_DEBUG ("Now at offset %" G_GUINT64_FORMAT " (returning %" G_GUINT64_FORMAT
+       ")", info->offset, newpos);
+   return newpos;
+ }
+ 
+-static int
+-gst_ffmpegdata_close (URLContext * h)
++int
++gst_ffmpegdata_open (GstPad * pad, int flags, AVIOContext ** context)
+ {
+   GstProtocolInfo *info;
++  static const int buffer_size = 4096;
++  unsigned char * buffer = NULL;
++
++  info = g_new0 (GstProtocolInfo, 1);
+ 
+-  info = (GstProtocolInfo *) h->priv_data;
++  info->set_streamheader = flags & GST_FFMPEG_URL_STREAMHEADER;
++  flags &= ~GST_FFMPEG_URL_STREAMHEADER;
++//  h->flags &= ~GST_FFMPEG_URL_STREAMHEADER;
++
++  /* we don't support R/W together */
++  if ((flags & AVIO_FLAG_READ_WRITE) == AVIO_FLAG_READ_WRITE) {
++    GST_WARNING ("Only read-only or write-only are supported");
++    return -EINVAL;
++  }
++
++  /* make sure we're a pad and that we're of the right type */
++  g_return_val_if_fail (GST_IS_PAD (pad), -EINVAL);
++
++  switch (flags) {
++    case AVIO_FLAG_READ:
++      g_return_val_if_fail (GST_PAD_IS_SINK (pad), -EINVAL);
++      break;
++    case AVIO_FLAG_WRITE:
++      g_return_val_if_fail (GST_PAD_IS_SRC (pad), -EINVAL);
++      break;
++  }
++
++  info->eos = FALSE;
++  info->pad = pad;
++  info->offset = 0;
++
++  buffer = malloc(buffer_size);
++  if (buffer == NULL)
++  {
++    GST_WARNING("Failed to allocate buffer");
++    return -ENOMEM;
++  }
++  
++  *context = avio_alloc_context(buffer, buffer_size, flags, (void *) info, gst_ffmpegdata_read, gst_ffmpegdata_write, gst_ffmpegdata_seek);
++  (*context)->seekable = AVIO_SEEKABLE_NORMAL;
++    
++  if (!(flags & AVIO_FLAG_WRITE))
++  {
++    (*context)->buf_ptr = (*context)->buf_end;
++    (*context)->write_flag = 0;
++  }
++
++  return 0;
++}
++
++int
++gst_ffmpegdata_close (AVIOContext * h)
++{
++  GstProtocolInfo *info;
++
++  info = (GstProtocolInfo *) h->opaque;
+   if (info == NULL)
+     return 0;
+ 
+   GST_LOG ("Closing file");
+ 
+-  switch (h->flags) {
+-    case URL_WRONLY:
++  if (GST_PAD_IS_SRC (info->pad))
+     {
+       /* send EOS - that closes down the stream */
+       gst_pad_push_event (info->pad, gst_event_new_eos ());
+-      break;
+     }
+-    default:
+-      break;
+-  }
+ 
+   /* clean up data */
+   g_free (info);
+-  h->priv_data = NULL;
++  h->opaque = NULL;
+ 
+   return 0;
+ }
+ 
+-
++#if 0
+ URLProtocol gstreamer_protocol = {
+   /*.name = */ "gstreamer",
+   /*.url_open = */ gst_ffmpegdata_open,
+@@ -296,47 +294,19 @@ URLProtocol gstreamer_protocol = {
+   /*.url_seek = */ gst_ffmpegdata_seek,
+   /*.url_close = */ gst_ffmpegdata_close,
+ };
+-
++#endif
+ 
+ /* specialized protocol for cross-thread pushing,
+  * based on ffmpeg's pipe protocol */
+ 
+ static int
+-gst_ffmpeg_pipe_open (URLContext * h, const char *filename, int flags)
+-{
+-  GstFFMpegPipe *ffpipe;
+-
+-  GST_LOG ("Opening %s", filename);
+-
+-  /* we don't support W together */
+-  if (flags != URL_RDONLY) {
+-    GST_WARNING ("Only read-only is supported");
+-    return -EINVAL;
+-  }
+-
+-  if (sscanf (&filename[10], "%p", &ffpipe) != 1) {
+-    GST_WARNING ("could not decode pipe info from %s", filename);
+-    return -EIO;
+-  }
+-
+-  /* sanity check */
+-  g_return_val_if_fail (GST_IS_ADAPTER (ffpipe->adapter), -EINVAL);
+-
+-  h->priv_data = (void *) ffpipe;
+-  h->is_streamed = TRUE;
+-  h->max_packet_size = 0;
+-
+-  return 0;
+-}
+-
+-static int
+-gst_ffmpeg_pipe_read (URLContext * h, unsigned char *buf, int size)
++gst_ffmpeg_pipe_read (void * priv_data, unsigned char *buf, int size)
+ {
+   GstFFMpegPipe *ffpipe;
+   const guint8 *data;
+   guint available;
+ 
+-  ffpipe = (GstFFMpegPipe *) h->priv_data;
++  ffpipe = (GstFFMpegPipe *) priv_data;
+ 
+   GST_LOG ("requested size %d", size);
+ 
+@@ -367,16 +337,46 @@ gst_ffmpeg_pipe_read (URLContext * h, un
+   return size;
+ }
+ 
+-static int
+-gst_ffmpeg_pipe_close (URLContext * h)
++int
++gst_ffmpeg_pipe_open (GstFFMpegPipe *ffpipe, int flags, AVIOContext ** context)
++{
++  static const int buffer_size = 4096;
++  unsigned char * buffer = NULL;
++
++  /* we don't support W together */
++  if (flags != AVIO_FLAG_READ) {
++    GST_WARNING ("Only read-only is supported");
++    return -EINVAL;
++  }
++
++  /* sanity check */
++  g_return_val_if_fail (GST_IS_ADAPTER (ffpipe->adapter), -EINVAL);
++
++  buffer = malloc(buffer_size);
++  if (buffer == NULL)
++  {
++    GST_WARNING("Failed to allocate buffer");
++    return -ENOMEM;
++  }
++  
++  *context = avio_alloc_context(buffer, buffer_size, 0, (void *) ffpipe, gst_ffmpeg_pipe_read, NULL, NULL);
++  (*context)->seekable = 0;
++  (*context)->buf_ptr = (*context)->buf_end;
++
++  return 0;
++}
++
++int
++gst_ffmpeg_pipe_close (AVIOContext * h)
+ {
+   GST_LOG ("Closing pipe");
+ 
+-  h->priv_data = NULL;
++  h->opaque = NULL;
+ 
+   return 0;
+ }
+ 
++#if 0
+ URLProtocol gstpipe_protocol = {
+   "gstpipe",
+   gst_ffmpeg_pipe_open,
+@@ -385,3 +385,4 @@ URLProtocol gstpipe_protocol = {
+   NULL,
+   gst_ffmpeg_pipe_close,
+ };
++#endif
+diff -p -up gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegutils.c.ffmpeg-1_0 gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegutils.c
+--- gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegutils.c.ffmpeg-1_0	2011-07-13 11:07:28.000000000 +0200
++++ gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegutils.c	2012-12-01 06:13:21.516533552 +0100
+@@ -39,21 +39,21 @@ gst_ffmpeg_get_codecid_longname (enum Co
+ }
+ 
+ gint
+-av_smp_format_depth (enum SampleFormat smp_fmt)
++av_smp_format_depth (enum AVSampleFormat smp_fmt)
+ {
+   gint depth = -1;
+   switch (smp_fmt) {
+-    case SAMPLE_FMT_U8:
++    case AV_SAMPLE_FMT_U8:
+       depth = 1;
+       break;
+-    case SAMPLE_FMT_S16:
++    case AV_SAMPLE_FMT_S16:
+       depth = 2;
+       break;
+-    case SAMPLE_FMT_S32:
+-    case SAMPLE_FMT_FLT:
++    case AV_SAMPLE_FMT_S32:
++    case AV_SAMPLE_FMT_FLT:
+       depth = 4;
+       break;
+-    case SAMPLE_FMT_DBL:
++    case AV_SAMPLE_FMT_DBL:
+       depth = 8;
+       break;
+     default:
+diff -p -up gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegutils.h.ffmpeg-1_0 gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegutils.h
+--- gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegutils.h.ffmpeg-1_0	2011-11-02 14:04:05.000000000 +0100
++++ gst-ffmpeg-0.10.13/ext/ffmpeg/gstffmpegutils.h	2012-12-01 06:13:21.526533436 +0100
+@@ -87,7 +87,7 @@ G_CONST_RETURN gchar *
+ gst_ffmpeg_get_codecid_longname (enum CodecID codec_id);
+ 
+ gint
+-av_smp_format_depth(enum SampleFormat smp_fmt);
++av_smp_format_depth(enum AVSampleFormat smp_fmt);
+ 
+ GstBuffer *
+ new_aligned_buffer (gint size, GstCaps * caps);
