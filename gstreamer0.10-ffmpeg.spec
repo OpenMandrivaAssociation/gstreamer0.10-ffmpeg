@@ -8,7 +8,7 @@
 
 Name:		%{bname}-ffmpeg
 Version:	0.10.13
-Release:	12
+Release:	13
 License:	GPLv2+
 Group:		Video
 Url:		http://www.gstreamer.net
