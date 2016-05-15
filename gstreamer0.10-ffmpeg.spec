@@ -4,11 +4,11 @@
 %define	oname	gst-ffmpeg
 
 # _with = default off, _without = default on
-%bcond_without external_ffmpeg
+%bcond_with external_ffmpeg
 
 Name:		%{bname}-ffmpeg
 Version:	0.10.13
-Release:	13
+Release:	14
 License:	GPLv2+
 Group:		Video
 Url:		http://www.gstreamer.net
