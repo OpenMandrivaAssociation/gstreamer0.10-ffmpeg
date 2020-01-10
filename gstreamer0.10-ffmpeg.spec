@@ -46,7 +46,7 @@ Video codec plugin for GStreamer based on the ffmpeg libraries.
 
 %prep
 %setup -qn %{oname}-%{version}
-%apply_patches
+%autopatch -p1
 
 %build
 # gst-ffmpeg mp3 decoder has issues (eg no seeking support), disable it since
