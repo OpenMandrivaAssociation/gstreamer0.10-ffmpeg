@@ -11,7 +11,7 @@ Version:	0.10.13
 Release:	14
 License:	GPLv2+
 Group:		Video
-Url:		http://www.gstreamer.net
+Url:		https://www.gstreamer.net
 Source0:	http://gstreamer.freedesktop.org/src/gst-ffmpeg/%{oname}-%{version}.tar.bz2
 # (Anssi 01/2008) Enable mpegts demuxer as well, for now.
 # If either
