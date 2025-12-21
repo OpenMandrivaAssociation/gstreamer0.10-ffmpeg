@@ -28,6 +28,11 @@ Patch4:	gst-ffmpeg-0.10.13-planar-audio.patch
 Patch5: gst-ffmpeg-0.10.13-ffmpeg-2.0.patch
 Patch6: gst-ffmpeg-0.10.13-ffmpeg-2.4.patch
 
+BuildRequires:	autoconf
+BuildRequires:	automake
+BuildRequires:	libtool-base
+BuildRequires:	slibtool
+BuildRequires:	make
 BuildRequires:	bzip2-devel
 BuildRequires:	pkgconfig(check)
 BuildRequires:	pkgconfig(freetype2)
